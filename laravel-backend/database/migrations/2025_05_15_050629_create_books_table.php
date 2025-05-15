@@ -13,7 +13,7 @@ return new class extends Migration {
         Schema::create('books', function (Blueprint $table) {
             $table->id();
             $table->string('title');
-            $table->text('gutenberg url')->nullable();
+            $table->text('gutenberg_url')->nullable();
             $table->timestamps();
         });
     }
