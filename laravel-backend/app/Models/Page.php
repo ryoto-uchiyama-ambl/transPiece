@@ -14,4 +14,9 @@ class Page extends Model
         'page_number',
         'content',
     ];
+
+    public function book()
+    {
+        return $this->belongsTo(Book::class);
+    }
 }
