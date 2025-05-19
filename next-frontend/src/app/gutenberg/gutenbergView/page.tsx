@@ -10,6 +10,9 @@ export default function BookDetailPage() {
     const searchParams = useSearchParams();
     const title = searchParams.get('title');
     const url = searchParams.get('url');
+    const authors = searchParams.get('authors');
+    const downloads = searchParams.get('downloads');
+    const lang = searchParams.get('lang');
 
     const [pages, setPages] = useState<string[]>([]);
     const [currentPage, setCurrentPage] = useState(0);
@@ -42,7 +45,7 @@ export default function BookDetailPage() {
 
     const uploadToLaravel = async () => {
         await api.get('/sanctum/csrf-cookie');
-        await api.post('/api/addBook', { title, gutenberg_url: url, pages });
+        await api.post('/api/addBook', { title, gutenberg_url: url, authors, downloads, lang, pages });
         // const response = await fetch('http://localhost:8000/api/addBook', {
         //     method: 'POST',
         //     headers: { 'Content-Type': 'application/json' },
@@ -56,6 +59,9 @@ export default function BookDetailPage() {
         <div className="min-h-screen bg-[#fdf6e3] text-gray-900 p-6">
             <div className="max-w-4xl mx-auto bg-white shadow-md rounded-md p-6">
                 <h1 className="text-2xl font-bold mb-4 text-center">{title}</h1>
+                {authors && <p className="text-center text-gray-700 mb-1">著者: {authors}</p>}
+                {downloads && <p className="text-center text-gray-500 text-sm mb-1">ダウンロード数: {downloads}</p>}
+                {lang && <p className="text-center text-gray-500 text-sm mb-4">言語: {lang}</p>}
 
                 {pages.length > 0 ? (
                     <>

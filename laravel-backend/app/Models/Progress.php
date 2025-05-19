@@ -8,4 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 class Progress extends Model
 {
     use HasFactory;
+
+    protected $fillable = [
+        'user_id',
+        'book_id',
+        'page_number',
+    ];
+
+    public function book()
+    {
+        return $this->belongsTo(Book::class);
+    }
 }

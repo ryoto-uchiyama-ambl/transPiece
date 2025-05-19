@@ -35,10 +35,17 @@ export default function BookSearchPage() {
     };
 
     const handleSelectBook = (book: any) => {
-        console.log(book , "book");
+        //console.log(book, "book");
         const plainTextUrl = book.formats["text/plain; charset=us-ascii"] || book.formats["text/plain"];
         if (!plainTextUrl) return alert("この書籍にはテキストがありません。");
-        router.push(`/gutenberg/gutenbergView?title=${encodeURIComponent(book.title)}&url=${encodeURIComponent(plainTextUrl)}`);
+        router.push(
+            `/gutenberg/gutenbergView?` +
+            `title=${encodeURIComponent(book.title)}` +
+            `&url=${encodeURIComponent(plainTextUrl)}` +
+            `&authors=${encodeURIComponent(book.authors.map((a: any) => a.name).join(', '))}` +
+            `&downloads=${book.download_count}` +
+            `&lang=${encodeURIComponent(book.languages.join(', '))}`
+        );
     };
 
     return (
@@ -66,10 +73,10 @@ export default function BookSearchPage() {
 
                 <ul className="divide-y">
                     {results.map((book) => (
-                        <li key={book.id} className="py-4 cursor-pointer hover:bg-gray-50" onClick={()=> handleSelectBook(book)}>
+                        <li key={book.id} className="py-4 cursor-pointer hover:bg-gray-50" onClick={() => handleSelectBook(book)}>
                             <h2 className="text-lg font-semibold">{book.title}</h2>
                             <p className="text-sm text-gray-600">
-                                {book.authors.map((a) => a.name).join(', ') || 'Unknown author'}
+                                {book.authors.map((a: { name: string }) => a.name).join(', ') || 'Unknown author'}
                             </p>
                         </li>
                     ))}

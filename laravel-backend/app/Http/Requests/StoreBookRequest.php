@@ -24,6 +24,9 @@ class StoreBookRequest extends FormRequest
         return [
             'title' => 'required|string',
             'gutenberg_url' => 'nullable|string',
+            'authors' => 'nullable|string',
+            'downloads' => 'nullable|integer',
+            'lang' => 'nullable|string',
             'pages' => 'required|array',
         ];
     }
