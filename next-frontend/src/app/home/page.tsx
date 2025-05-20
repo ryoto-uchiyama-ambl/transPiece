@@ -1,0 +1,179 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import api from '../../../lib/api';
+
+interface Book {
+    id: number;
+    title: string;
+    author: string;
+    lang: string;
+    downloads: number;
+    gutenberg_url: string;
+}
+
+export default function HomePage() {
+    const [books, setBooks] = useState<Book[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchBooks = async () => {
+            try {
+                await api.get('/sanctum/csrf-cookie');
+                const res = await api.get('/api/books');
+                setBooks(res.data);
+            } catch (err) {
+                console.error('取得失敗:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchBooks();
+    }, []);
+
+    // カスタムスケルトンローダー
+    const BookSkeleton = () => (
+        <div className="bg-gray-800/10 rounded-xl p-5 animate-pulse">
+            <div className="h-6 bg-gray-800/20 rounded-md w-3/4 mb-4"></div>
+            <div className="h-4 bg-gray-800/20 rounded-md w-1/2 mb-3"></div>
+            <div className="h-3 bg-gray-800/20 rounded-md w-1/4 mb-2"></div>
+            <div className="h-3 bg-gray-800/20 rounded-md w-1/3 mb-4"></div>
+            <div className="h-4 bg-gray-800/20 rounded-md w-1/4 mt-3"></div>
+        </div>
+    );
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto pl-10">
+                {/* ヘッダーセクション */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+                            あなたの本棚
+                        </h1>
+                        <p className="mt-2 text-gray-600 dark:text-gray-300">
+                            お気に入りの書籍を翻訳しましょう
+                        </p>
+                    </div>
+
+                    <div className="mt-4 md:mt-0">
+                        <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition flex items-center space-x-2">
+                            <span className="ri-add-line"></span>
+                            <span>新しい本を追加</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* 統計カード */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center space-x-4">
+                            <div className="p-3 bg-blue-500/10 dark:bg-blue-400/10 rounded-lg">
+                                <span className="ri-book-open-line text-xl text-blue-600 dark:text-blue-400"></span>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">総読書数</p>
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{loading ? '...' : books.length}</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center space-x-4">
+                            <div className="p-3 bg-purple-500/10 dark:bg-purple-400/10 rounded-lg">
+                                <span className="ri-bookmark-line text-xl text-purple-600 dark:text-purple-400"></span>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">お気に入り</p>
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">0</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center space-x-4">
+                            <div className="p-3 bg-emerald-500/10 dark:bg-emerald-400/10 rounded-lg">
+                                <span className="ri-time-line text-xl text-emerald-600 dark:text-emerald-400"></span>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">最近の追加</p>
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{loading ? '...' : '3日前'}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 本のリスト */}
+                <div className="mb-8">
+                    <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white flex items-center">
+                        <span className="ri-apps-line mr-2"></span>
+                        すべての書籍
+                    </h2>
+
+                    {loading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {[...Array(8)].map((_, index) => (
+                                <BookSkeleton key={index} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {books.map((book) => (
+                                <div
+                                    key={book.id}
+                                    className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition group border border-gray-100 dark:border-gray-700"
+                                >
+                                    <div className="h-30 bg-gradient-to-r from-indigo-500 to-purple-600 relative p-5 flex items-end">
+                                        <div className="absolute inset-0 bg-black/20"></div>
+                                        <h2 className="text-xl font-bold text-white relative z-10 line-clamp-2">{book.title}</h2>
+                                    </div>
+                                    <div className="p-5">
+                                        <p className="text-gray-700 dark:text-gray-300 font-medium mb-3">{book.author || '著者不明'}</p>
+                                        <div className="flex items-center space-x-4 mb-4">
+                                            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                                                <span className="ri-translate-2 mr-1"></span>
+                                                <span>{book.lang}</span>
+                                            </div>
+                                            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                                                <span className="ri-download-line mr-1"></span>
+                                                <span>{book.downloads.toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <a
+                                                href={`/book/detail?id=${book.id}`}
+                                                className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium flex items-center text-sm transition"
+                                            >
+                                                詳細を見る
+                                                <span className="ri-arrow-right-line ml-1 group-hover:translate-x-1 transition-transform"></span>
+                                            </a>
+                                            <button className="p-2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition">
+                                                <span className="ri-bookmark-line"></span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {books.length === 0 && !loading && (
+                    <div className="text-center py-16">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 mb-4">
+                            <span className="ri-book-open-line text-3xl text-gray-400"></span>
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">本がまだありません</h3>
+                        <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
+                            新しい本を追加して、あなたの読書コレクションを始めましょう。
+                        </p>
+                        <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition">
+                            最初の本を追加
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}

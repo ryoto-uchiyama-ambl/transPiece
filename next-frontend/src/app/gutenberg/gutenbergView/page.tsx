@@ -1,10 +1,9 @@
-// Frontend (Next.js) - Add button and API call
 'use client';
 
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import api from '../../../../lib/api';
-
+import "remixicon/fonts/remixicon.css";
 
 export default function BookDetailPage() {
     const searchParams = useSearchParams();
@@ -16,14 +15,23 @@ export default function BookDetailPage() {
 
     const [pages, setPages] = useState<string[]>([]);
     const [currentPage, setCurrentPage] = useState(0);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
 
     useEffect(() => {
         if (url) {
+            setIsLoading(true);
             fetch(`/api/proxy?url=${encodeURIComponent(url)}`)
                 .then((res) => res.text())
                 .then((data) => {
                     const cleaned = data.replace(/\r/g, '');
                     paginateText(cleaned);
+                    setIsLoading(false);
+                })
+                .catch(err => {
+                    console.error("Error fetching book:", err);
+                    setIsLoading(false);
                 });
         }
     }, [url]);
@@ -44,48 +52,133 @@ export default function BookDetailPage() {
     const prevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 0));
 
     const uploadToLaravel = async () => {
-        await api.get('/sanctum/csrf-cookie');
-        await api.post('/api/addBook', { title, gutenberg_url: url, authors, downloads, lang, pages });
-        // const response = await fetch('http://localhost:8000/api/addBook', {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify({ title, gutenberg_url: url, pages })
-        // });
-        // const data = await response.json();
-        // alert(data.message || '送信しました');
+        try {
+            setIsSubmitting(true);
+            await api.get('/sanctum/csrf-cookie');
+            const response = await api.post('/api/addBook', {
+                title,
+                gutenberg_url: url,
+                authors,
+                downloads,
+                lang,
+                pages
+            });
+            setSuccessMessage('ライブラリに追加されました');
+            setTimeout(() => setSuccessMessage(''), 3000);
+        } catch (error) {
+            console.error("Error uploading book:", error);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
-        <div className="min-h-screen bg-[#fdf6e3] text-gray-900 p-6">
-            <div className="max-w-4xl mx-auto bg-white shadow-md rounded-md p-6">
-                <h1 className="text-2xl font-bold mb-4 text-center">{title}</h1>
-                {authors && <p className="text-center text-gray-700 mb-1">著者: {authors}</p>}
-                {downloads && <p className="text-center text-gray-500 text-sm mb-1">ダウンロード数: {downloads}</p>}
-                {lang && <p className="text-center text-gray-500 text-sm mb-4">言語: {lang}</p>}
-
-                {pages.length > 0 ? (
-                    <>
-                        <div className="relative h-[60vh] overflow-auto border p-6 text-lg leading-relaxed font-serif bg-white whitespace-pre-wrap">
-                            {pages[currentPage]}
+        <div className="pl-16 lg:pl-64 min-h-screen bg-gray-50">
+            <div className="max-w-6xl mx-auto p-6">
+                <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                    {/* Header Section */}
+                    <div className="bg-gradient-to-r from-indigo-600 to-indigo-500 p-6 text-white">
+                        <h1 className="text-2xl font-bold">{title || 'ブックタイトル'}</h1>
+                        <div className="mt-2 flex flex-wrap items-center gap-4 text-indigo-100">
+                            {authors && (
+                                <div className="flex items-center">
+                                    <span className="ri-user-3-line mr-1"></span>
+                                    <span>{authors}</span>
+                                </div>
+                            )}
+                            {downloads && (
+                                <div className="flex items-center">
+                                    <span className="ri-download-line mr-1"></span>
+                                    <span>{downloads} ダウンロード</span>
+                                </div>
+                            )}
+                            {lang && (
+                                <div className="flex items-center">
+                                    <span className="ri-global-line mr-1"></span>
+                                    <span>{lang}</span>
+                                </div>
+                            )}
                         </div>
+                    </div>
 
-                        <div className="flex justify-between items-center mt-6 text-sm text-gray-600">
-                            <button onClick={prevPage} disabled={currentPage === 0} className={`px-4 py-2 rounded ${currentPage === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
-                                ← Prev
-                            </button>
-                            <span>Page {currentPage + 1} of {pages.length}</span>
-                            <button onClick={nextPage} disabled={currentPage >= pages.length - 1} className={`px-4 py-2 rounded ${currentPage >= pages.length - 1 ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
-                                Next →
-                            </button>
-                        </div>
+                    {/* Content Section */}
+                    <div className="p-6">
+                        {isLoading ? (
+                            <div className="flex justify-center items-center h-[60vh]">
+                                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+                            </div>
+                        ) : pages.length > 0 ? (
+                            <>
+                                <div className="relative h-[60vh] overflow-auto border border-gray-200 rounded-lg p-6 text-lg leading-relaxed font-serif bg-white whitespace-pre-wrap shadow-sm">
+                                    {pages[currentPage]}
+                                </div>
 
-                        <div className="flex justify-center mt-4">
-                            <button onClick={uploadToLaravel} className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">追加</button>
-                        </div>
-                    </>
-                ) : (
-                    <p className="text-center text-gray-500">読み込み中...</p>
-                )}
+                                <div className="flex justify-between items-center mt-6">
+                                    <button
+                                        onClick={prevPage}
+                                        disabled={currentPage === 0}
+                                        className={`flex items-center px-4 py-2 rounded-lg transition-all ${currentPage === 0
+                                                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                                : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+                                            }`}
+                                    >
+                                        <span className="ri-arrow-left-line mr-1"></span>
+                                        前のページ
+                                    </button>
+
+                                    <span className="text-gray-600 font-medium">
+                                        {currentPage + 1} / {pages.length}
+                                    </span>
+
+                                    <button
+                                        onClick={nextPage}
+                                        disabled={currentPage >= pages.length - 1}
+                                        className={`flex items-center px-4 py-2 rounded-lg transition-all ${currentPage >= pages.length - 1
+                                                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                                : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+                                            }`}
+                                    >
+                                        次のページ
+                                        <span className="ri-arrow-right-line ml-1"></span>
+                                    </button>
+                                </div>
+
+                                <div className="flex justify-center mt-8">
+                                    {successMessage ? (
+                                        <div className="bg-green-100 text-green-700 px-6 py-3 rounded-lg flex items-center">
+                                            <span className="ri-check-line mr-2"></span>
+                                            {successMessage}
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={uploadToLaravel}
+                                            disabled={isSubmitting}
+                                            className={`flex items-center bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-all ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''
+                                                }`}
+                                        >
+                                            {isSubmitting ? (
+                                                <>
+                                                    <span className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></span>
+                                                    処理中...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span className="ri-add-line mr-2"></span>
+                                                    ライブラリに追加
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-[60vh] text-gray-500">
+                                <span className="ri-book-open-line text-5xl mb-4"></span>
+                                <p>コンテンツが見つかりませんでした</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );

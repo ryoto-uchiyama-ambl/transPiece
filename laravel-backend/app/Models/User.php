@@ -42,4 +42,9 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    public function progresses()
+    {
+        return $this->hasMany(\App\Models\Progress::class);
+    }
 }

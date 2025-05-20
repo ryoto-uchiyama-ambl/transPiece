@@ -25,3 +25,5 @@ Route::post('/logout', [AuthController::class, 'logout']);
 Route::post('/register', [AuthController::class, 'register']);
 
 Route::post('/addBook', [BookController::class, 'store']);
+//Route::middleware('auth:sanctum')->get('/books', [BookController::class, 'index']);
+Route::get('/books', [BookController::class, 'index']);
