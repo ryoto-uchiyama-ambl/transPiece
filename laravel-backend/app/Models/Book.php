@@ -18,6 +18,7 @@ class Book extends Model
         'author',
         'lang',
         'downloads',
+        'page_count',
     ];
 
     public function pages()
@@ -45,6 +46,7 @@ class Book extends Model
             'author' => $data['authors'] ?? null,
             'lang' => $data['lang'] ?? null,
             'downloads' => $data['downloads'] ?? 0,
+            'page_count' => count($data['pages']) ?? 0,
         ]);
 
         // page作成

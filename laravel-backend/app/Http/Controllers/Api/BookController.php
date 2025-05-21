@@ -5,9 +5,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Book;
+use App\Models\Progress;
 use App\Http\Requests\StoreBookRequest;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Http\Request;
 
 class BookController extends Controller
 {
@@ -16,14 +17,41 @@ class BookController extends Controller
         $user = Auth::user();
 
         if (!$user) {
-            $books = $user->progresses()->with('book')->get()->where('user_id', 1)->pluck('book')->unique('id')->values();
-            return response()->json($books);
+            $user->id = 1;
         }
 
         // Progress 経由で保存した本一覧を取得
-        $books = $user->progresses()->with('book')->get()->pluck('book')->unique('id')->values();
+        $progresses = Progress::with('book')
+            ->where('user_id', $user->id)
+            ->get();
 
-        return response()->json($books);
+        $books = $progresses->map(function ($progress) {
+            return [
+                'id' => $progress->book->id,
+                'title' => $progress->book->title,
+                'author' => $progress->book->author,
+                'lang' => $progress->book->lang,
+                'downloads' => $progress->book->downloads,
+                'gutenberg_url' => $progress->book->gutenberg_url,
+                'is_favorite' => $progress->is_favorite,
+                'current_page' => $progress->current_page,
+                'total_page' => $progress->book->page_count,
+            ];
+        })->unique('id')->values();
+        // 取得した本の情報を元に統計情報を作成
+        $totalBooks = $books->count();
+        $favoriteBooks = $progresses->filter(fn($progress) => $progress->is_favorite)->count();
+        $latestProgress = $progresses->sortByDesc('updated_at')->first();
+        $recentlyAdded = $latestProgress ? $latestProgress->created_at->diffForHumans() : '不明';
+
+        return response()->json([
+            'books' => $books,
+            'stats' => [
+                'total' => $totalBooks,
+                'favorites' => $favoriteBooks,
+                'recentlyAdded' => $recentlyAdded,
+            ]
+        ]);
     }
     public function store(StoreBookRequest $request)
     {
@@ -34,6 +62,28 @@ class BookController extends Controller
         } else {
             return response()->json(['message' => 'このタイトルは既に存在します', 'book_id' => $book->id]);
         }
+    }
+
+    public function toggleFavorite(Request $request, Book $book)
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            $user->id = 1;
+        }
+
+        $progress = Progress::firstOrCreate(
+            ['user_id' => $user->id, 'book_id' => $book->id],
+            ['is_favorite' => false]
+        );
+
+        $progress->is_favorite = !$progress->is_favorite;
+        $progress->save();
+
+        return response()->json([
+            'favorite' => $progress->is_favorite,
+            'message' => $progress->is_favorite ? 'お気に入りに追加しました' : 'お気に入りを解除しました',
+        ]);
     }
 }
 

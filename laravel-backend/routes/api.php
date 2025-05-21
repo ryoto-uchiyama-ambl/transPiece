@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Api\BookController;
+use App\Http\Controllers\Api\PageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,3 +28,5 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/addBook', [BookController::class, 'store']);
 //Route::middleware('auth:sanctum')->get('/books', [BookController::class, 'index']);
 Route::get('/books', [BookController::class, 'index']);
+Route::post('/books/{book}/toggleFavorite', [BookController::class, 'toggleFavorite']);
+Route::get('/book/{book}', [PageController::class, 'show']);

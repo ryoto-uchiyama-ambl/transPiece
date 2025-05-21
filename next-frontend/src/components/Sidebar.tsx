@@ -13,6 +13,7 @@ export default function CollapsibleSidebar() {
         { href: "/home", icon: "ri-home-5-line", label: "Home" },
         { href: "/book", icon: "ri-book-open-line", label: "Book" },
         { href: "/gutenberg/gutenbergSearch", icon: "ri-search-2-line", label: "BookSearch" },
+        { href: "/vocaburary", icon: "ri-book-line", label: "Vocabulary" },
         { href: "/chart", icon: "ri-bar-chart-2-line", label: "Chart" },
         { href: "/message", icon: "ri-chat-3-line", label: "Message" },
         { href: "/user", icon: "ri-user-3-line", label: "User" },
@@ -26,7 +27,7 @@ export default function CollapsibleSidebar() {
             <div className="flex flex-col h-full">
                 {/* Logo Section */}
                 <div className={`flex items-center ${open ? 'justify-between' : 'justify-center'} py-6 px-4 border-b border-gray-700/50`}>
-                    {open && <h1 className="font-bold text-xl tracking-tight">Dashboard</h1>}
+                    {open && <h1 className="font-bold text-xl tracking-tight">TransPiece</h1>}
                     <button
                         onClick={() => setOpen(!open)}
                         className={`p-2 rounded-full hover:bg-gray-700/50 transition-all duration-200 ${!open && 'mx-auto'}`}
@@ -46,8 +47,8 @@ export default function CollapsibleSidebar() {
                                     <Link
                                         href={href}
                                         className={`flex items-center ${open ? 'justify-start' : 'justify-center'} ${
-                                            isActive 
-                                                ? 'bg-indigo-600 text-white' 
+                                            isActive
+                                                ? 'bg-indigo-600 text-white'
                                                 : 'text-gray-300 hover:bg-gray-700/40 hover:text-white'
                                         } rounded-lg px-3 py-2.5 transition-all duration-200 group`}
                                     >

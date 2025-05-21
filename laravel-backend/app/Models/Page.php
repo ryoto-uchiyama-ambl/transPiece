@@ -19,4 +19,9 @@ class Page extends Model
     {
         return $this->belongsTo(Book::class);
     }
+
+    public function translations()
+    {
+        return $this->hasMany(Translation::class);
+    }
 }

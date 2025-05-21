@@ -13,6 +13,7 @@ class Progress extends Model
         'user_id',
         'book_id',
         'page_number',
+        'is_favorite',
     ];
 
     public function book()

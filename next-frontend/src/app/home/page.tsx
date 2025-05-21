@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import api from '../../../lib/api';
+import Link from 'next/link';
+
 
 interface Book {
     id: number;
@@ -10,18 +12,24 @@ interface Book {
     lang: string;
     downloads: number;
     gutenberg_url: string;
+    is_favorite: boolean;
+    current_page: number;
+    total_page: number;
 }
 
 export default function HomePage() {
     const [books, setBooks] = useState<Book[]>([]);
     const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({ total: 0, favorites: 0, recentlyAdded: '' });
+    const [isFavorite, setIsFavorite] = useState(false);
 
     useEffect(() => {
         const fetchBooks = async () => {
             try {
                 await api.get('/sanctum/csrf-cookie');
                 const res = await api.get('/api/books');
-                setBooks(res.data);
+                setBooks(res.data.books);
+                setStats(res.data.stats);
             } catch (err) {
                 console.error('取得失敗:', err);
             } finally {
@@ -43,6 +51,24 @@ export default function HomePage() {
         </div>
     );
 
+    //お気に入り切り替え
+    const toggleFavorite = async (bookId: number) => {
+        try {
+            await api.get('/sanctum/csrf-cookie');
+            const res = await api.post(`/api/books/${bookId}/toggleFavorite`);
+            const updatedBooks = books.map(book =>
+                book.id === bookId ? { ...book, is_favorite: res.data.favorite } : book
+            );
+            setBooks(updatedBooks);
+            setStats(prevStats => ({
+                ...prevStats,
+                favorites: res.data.favorite ? prevStats.favorites + 1 : prevStats.favorites - 1
+            }));
+        } catch (error) {
+            console.error('お気に入り切り替え失敗', error)
+        }
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto pl-10">
@@ -57,24 +83,37 @@ export default function HomePage() {
                         </p>
                     </div>
 
-                    <div className="mt-4 md:mt-0">
-                        <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition flex items-center space-x-2">
-                            <span className="ri-add-line"></span>
-                            <span>新しい本を追加</span>
-                        </button>
-                    </div>
+                    <Link
+                        href="/gutenberg/gutenbergSearch"
+                        className="inline-flex px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition items-center space-x-2"
+                    >
+                        <span className="ri-add-line"></span>
+                        <span>新しい本を追加</span>
+                    </Link>
                 </div>
 
                 {/* 統計カード */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
                         <div className="flex items-center space-x-4">
                             <div className="p-3 bg-blue-500/10 dark:bg-blue-400/10 rounded-lg">
                                 <span className="ri-book-open-line text-xl text-blue-600 dark:text-blue-400"></span>
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">総読書数</p>
-                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{loading ? '...' : books.length}</h3>
+                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">総書籍数</p>
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{loading ? '...' : stats.total}</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center space-x-4">
+                            <div className="p-3 bg-blue-500/10 dark:bg-blue-400/10 rounded-lg">
+                                <span className="ri-translate-2 text-xl text-blue-600 dark:text-blue-400"></span>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">総翻訳数</p>
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{loading ? '...' : stats.total}</h3>
                             </div>
                         </div>
                     </div>
@@ -86,7 +125,7 @@ export default function HomePage() {
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">お気に入り</p>
-                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">0</h3>
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{loading ? '...' : stats.favorites}</h3>
                             </div>
                         </div>
                     </div>
@@ -98,7 +137,7 @@ export default function HomePage() {
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">最近の追加</p>
-                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{loading ? '...' : '3日前'}</h3>
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{loading ? '...' : stats.recentlyAdded}</h3>
                             </div>
                         </div>
                     </div>
@@ -140,16 +179,33 @@ export default function HomePage() {
                                                 <span>{book.downloads.toLocaleString()}</span>
                                             </div>
                                         </div>
+                                        {book.total_page > 0 && (
+                                            <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full mb-4">
+                                                <div
+                                                    className="h-2 bg-indigo-500 rounded-full"
+                                                    style={{ width: `${Math.floor((book.current_page || 0) / book.total_page * 100)}%` }}
+                                                ></div>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                    進捗: {Math.floor((book.current_page || 0) / book.total_page * 100)}%
+                                                </p>
+                                            </div>
+                                        )}
                                         <div className="flex justify-between items-center">
                                             <a
-                                                href={`/book/detail?id=${book.id}`}
+                                                href={`/book/${book.id}`}
                                                 className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium flex items-center text-sm transition"
                                             >
-                                                詳細を見る
+                                                翻訳を試みる
                                                 <span className="ri-arrow-right-line ml-1 group-hover:translate-x-1 transition-transform"></span>
                                             </a>
-                                            <button className="p-2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition">
-                                                <span className="ri-bookmark-line"></span>
+                                            <button
+                                                onClick={() => toggleFavorite(book.id)}
+                                                className={`p-2 transition ${book.is_favorite
+                                                    ? 'text-indigo-500 hover:text-indigo-700'
+                                                    : 'text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400'
+                                                    }`}
+                                            >
+                                                <span className={book.is_favorite ? 'ri-bookmark-fill' : 'ri-bookmark-line'}></span>
                                             </button>
                                         </div>
                                     </div>
@@ -168,9 +224,13 @@ export default function HomePage() {
                         <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
                             新しい本を追加して、あなたの読書コレクションを始めましょう。
                         </p>
-                        <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition">
-                            最初の本を追加
-                        </button>
+                        <Link
+                            href="/gutenberg/gutenbergSearch"
+                            className="inline-flex px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition items-center space-x-2"
+                        >
+                            <span className="ri-add-line"></span>
+                            <span>最初の本を追加</span>
+                        </Link>
                     </div>
                 )}
             </div>

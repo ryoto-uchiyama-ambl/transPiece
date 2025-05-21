@@ -8,4 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class Translation extends Model
 {
     use HasFactory;
+
+    public function page()
+    {
+        return $this->belongsTo(Page::class);
+    }
 }

@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('page_id')->constrained()->onDelete('cascade');
-            $table->longText('translated text')->nullable();
+            $table->longText('translated_text')->nullable();
             $table->float('score')->nullable();
-            $table->longText('AIfeedback')->nullable();
+            $table->longText('AI_feedback')->nullable();
             $table->timestamps();
 
             $table->unique(['user_id', 'page_id']);

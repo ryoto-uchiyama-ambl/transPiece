@@ -158,7 +158,7 @@ export default function BookTranslationPreview() {
                         <button
                             className={`relative inline-flex items-center px-4 py-2 text-sm font-medium
                                 bg-blue-200 text-gray-700
-                                border border-gray-300`}
+                                border border-gray-300 hover:bg-blue-300 hover:text-white`}
                         >
                             採点
                         </button>

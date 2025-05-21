@@ -15,6 +15,7 @@ return new class extends Migration {
                 $table->string('author')->nullable();     // 著者（カンマ区切りなど）
                 $table->unsignedInteger('downloads')->default(0); // ダウンロード数
                 $table->string('lang', 10)->nullable();     // 言語コード（例: en）
+                $table->Integer('page_count')->default(0)->nullable(); // ページ数
             });
         });
     }
@@ -25,7 +26,7 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::table('books', function (Blueprint $table) {
-            $table->dropColumn(['author', 'downloads', 'lang']);
+            $table->dropColumn(['author', 'downloads', 'lang', 'page_count']);
         });
     }
 };
