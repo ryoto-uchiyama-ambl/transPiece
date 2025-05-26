@@ -16,12 +16,12 @@ class ProgressTableSeeder extends Seeder
     {
 
 
-        \DB::table('progress')->delete();
+        //\DB::table('progress')->delete();
 
         \DB::table('progress')->insert(array(
             0 =>
                 array(
-                    'id' => 1,
+                    //'id' => 1,
                     'user_id' => 2,
                     'book_id' => 1,
                     'current_page' => 0,

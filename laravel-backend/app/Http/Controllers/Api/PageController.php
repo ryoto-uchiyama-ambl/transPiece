@@ -47,5 +47,24 @@ class PageController extends Controller
             'pages' => $pages
         ]);
     }
+
+    public function saveTranslation(Request $request)
+    {
+        $request->validate([
+        'book_id' => 'required|integer',
+        'page_number' => 'required|integer',
+        'translated_text' => 'required|string',
+    ]);
+
+    $page = Page::where('book_id', $request->book_id)
+                ->where('page_number', $request->page_number)
+                ->firstOrFail();
+
+    $translation = $page->translations()->firstOrNew(['user_id' => auth()->id()]);
+    $translation->translated_text = $request->translated_text;
+    $translation->save();
+
+    return response()->json(['message' => '保存しました']);
+    }
 }
 

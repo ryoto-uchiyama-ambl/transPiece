@@ -3,6 +3,9 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use App\Models\Book;
+use App\Models\Page;
+use Illuminate\Support\Facades\DB;
 
 class BooksTableSeeder extends Seeder
 {
@@ -32,7 +35,5 @@ class BooksTableSeeder extends Seeder
                     'page_count' => 36,
                 ),
         ));
-
-
     }
 }

@@ -16,8 +16,18 @@ class BookFactory extends Factory
      */
     public function definition(): array
     {
+        $fakerEn = \Faker\Factory::create('en_US');
+
         return [
-            //
+            'title' => fake()->sentence(),
+            'gutenberg_url' => $this->faker->optional()->url(),
+            //英語の著者追加
+            'author' => $fakerEn->name(),
+            'downloads' => fake()->numberBetween(0, 100000),
+            'lang' => fake()->randomElement(['en', 'ja', 'fr', 'de', 'es']),
+            'page_count' => fake()->numberBetween(10, 100),
+            'created_at' => now(),
+            'updated_at' => now(),
         ];
     }
 }

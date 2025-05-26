@@ -4,6 +4,7 @@
 import { useEffect, useState, useRef } from 'react';
 import api from '../../../../lib/api';
 import { useParams } from 'next/navigation';
+import axios from 'axios';
 
 interface Translation {
     translatedText: string;
@@ -113,68 +114,12 @@ export default function BookTranslationPreview() {
         setClickedWord(word);
 
         try {
-            // 本来はAPIで単語翻訳するべきだが、ここではモック
-            // 実際の実装では下記のようなAPIコールを行う
-            // const response = await api.post('/api/translate-word', { word });
-            // const translation = response.data.translation;
-
-            // モック翻訳 (実際の実装では削除してAPIレスポンスを使用)
-            const mockTranslations: Record<string, string> = {
-                'the': '〜の、その',
-                'a': '1つの、ある',
-                'and': 'そして、および',
-                'in': '〜の中に、〜において',
-                'to': '〜へ、〜に向かって',
-                'of': '〜の、〜から',
-                'is': 'である、います',
-                'for': '〜のために、〜向けの',
-                'with': '〜と一緒に、〜を持って',
-                'on': '〜の上に、〜について',
-                'at': '〜で、〜に',
-                'from': '〜から、〜より',
-                'by': '〜によって、〜のそばに',
-                'about': '〜について、およそ',
-                'like': '〜のような、好む',
-                'through': '〜を通して、〜の間中',
-                'over': '〜の上に、〜を超えて',
-                'before': '〜の前に、以前に',
-                'between': '〜の間に',
-                'after': '〜の後に、〜の後で',
-                'since': '〜以来、〜なので',
-                'without': '〜なしで、〜がないと',
-                'under': '〜の下に、〜未満で',
-                'within': '〜の中に、〜以内に',
-                'along': '〜に沿って、〜と一緒に',
-                'against': '〜に対して、〜に反対して',
-                'during': '〜の間に、〜の最中に',
-                'around': '〜の周りに、おおよそ',
-                'into': '〜の中へ、〜になって',
-                'across': '〜を横切って、向こう側に',
-                'behind': '〜の後ろに、〜の背後に',
-                'beyond': '〜を超えて、〜の向こうに',
-                'near': '〜の近くに、もうすぐ',
-                'among': '〜の間に、〜の中に',
-                'towards': '〜の方へ、〜に向かって',
-                'upon': '〜の上に、〜すると直ちに',
-                'beside': '〜のそばに、〜に加えて',
-                'beneath': '〜の下に、〜に値しない',
-                'besides': '〜に加えて、その上',
-                'except': '〜を除いて、〜以外は',
-                'inside': '〜の内側に、〜の内部に',
-                'outside': '〜の外側に、〜の範囲外で',
-                'throughout': '〜の至る所に、終始',
-                'despite': '〜にもかかわらず',
-                'below': '〜の下に、〜より低く',
-                'above': '〜の上に、〜より上に',
-                'until': '〜まで、〜するまで',
-                'unless': '〜でない限り、もし〜でなければ'
-            };
-
-            // 辞書にない場合はそのまま返す (実際の実装では削除)
-            const translation = mockTranslations[word.toLowerCase()] || `「${word}」の翻訳`;
+            await api.get('/sanctum/csrf-cookie'); // Laravel Sanctum CSRF
+            const response = await api.post('/api/translate-word', { word });
+            const translation = response.data.translations[0]?.text || '翻訳結果がありません';
 
             // 少し遅延を入れてモックAPIのように見せる (実際の実装では削除)
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             setWordPopup({
                 word,
@@ -211,8 +156,13 @@ export default function BookTranslationPreview() {
     const currentData = pages[currentPage - 1];
     const translation = currentData.translations[0]; // 1件目を使う（必要に応じて複数対応も可）
 
-    const changePage = (direction: 'next' | 'prev') => {
+    const changePage = async (direction: 'next' | 'prev') => {
         closePopup(); // ページ変更時にポップアップを閉じる
+
+        // 現在の翻訳を保存
+        await saveTranslation();
+
+        // ページを変更
         if (direction === 'next' && currentPage < pages.length) {
             setCurrentPage(currentPage + 1);
         } else if (direction === 'prev' && currentPage > 1) {
@@ -246,6 +196,24 @@ export default function BookTranslationPreview() {
             );
         });
     };
+
+    const saveTranslation = async () => {
+        const current = pages[currentPage - 1];
+        const translation = current.translations[0];
+
+        if(!translation || !translation.translatedText) return;
+
+        try {
+            await api.get('/sanctum/csrf-cookie');
+            await api.post('/api/saveTranslation', {
+                book_id,
+                page_number: current.page_number,
+                translated_text: translation.translatedText,
+            });
+        } catch (err) {
+            console.error('翻訳の保存に失敗しました', err);
+        }
+    }
 
     return (
         <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
@@ -283,7 +251,32 @@ export default function BookTranslationPreview() {
                             <span className="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">日本語</span>
                         </div>
                         <div className="border-t border-gray-100 pt-4">
-                            <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{translation?.translatedText ?? '未翻訳'}</p>
+                            <textarea
+                                value={translation?.translatedText ?? ''}
+                                onChange={(e) => {
+                                    const newText = e.target.value;
+                                    setPages((prevPages) =>
+                                        prevPages.map((page, idx) => {
+                                            if (idx === currentPage - 1) {
+                                                const updatedTranslations = [...page.translations];
+                                                if (updatedTranslations.length > 0) {
+                                                    updatedTranslations[0] = {
+                                                        ...updatedTranslations[0],
+                                                        translatedText: newText,
+                                                    };
+                                                }
+                                                return {
+                                                    ...page,
+                                                    translations: updatedTranslations,
+                                                };
+                                            }
+                                            return page;
+                                        })
+                                    );
+                                }}
+                                className="w-full h-[600px] resize-none border border-gray-300 rounded-lg p-4 text-gray-800 leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                placeholder="ここに翻訳を書いてください…"
+                            />
                         </div>
                     </div>
 

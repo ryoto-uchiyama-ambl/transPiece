@@ -17,7 +17,12 @@ class ProgressFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'user_id' => 2,
+            'book_id' => 1,
+            'current_page' => fake()->numberBetween(1, 100),
+            'is_favorite' => fake()->boolean(),
+            'created_at' => now(),
+            'updated_at' => now(),
         ];
     }
 }

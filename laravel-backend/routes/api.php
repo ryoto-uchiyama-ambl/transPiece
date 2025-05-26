@@ -30,3 +30,20 @@ Route::post('/addBook', [BookController::class, 'store']);
 Route::get('/books', [BookController::class, 'index']);
 Route::post('/books/{book}/toggleFavorite', [BookController::class, 'toggleFavorite']);
 Route::get('/book/{book}', [PageController::class, 'show']);
+
+
+Route::post('/translate-word', function (Request $request) {
+    $word = $request->input('word');
+
+    $response = Http::withHeaders([
+        'Authorization' => 'DeepL-Auth-Key ' . env('DEEPL_API_KEY'),
+    ])->asForm()->post('https://api-free.deepl.com/v2/translate', [
+        'text' => $word,
+        'source_lang' => 'EN',
+        'target_lang' => 'JA',
+    ]);
+
+    return $response->json();
+});
+
+Route::post('/saveTranslation', [PageController::class, 'saveTranslation']);

@@ -192,7 +192,8 @@ export default function HomePage() {
                                         )}
                                         <div className="flex justify-between items-center">
                                             <a
-                                                href={`/book/${book.id}`}
+                                                // href={`/book/${book.id}`}
+                                                href={`/book2/${book.id}`}
                                                 className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium flex items-center text-sm transition"
                                             >
                                                 翻訳を試みる
