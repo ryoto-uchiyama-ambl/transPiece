@@ -38,6 +38,7 @@ class PageController extends Controller
                             'translatedText' => $translation->translated_text,
                             'score' => $translation->score ?? 0,
                             'AIfeedback' => $translation->AI_feedback ?? '',
+                            'AItext' => $translation->AI_text ?? '',
                         ];
                     }),
                 ];
@@ -54,6 +55,9 @@ class PageController extends Controller
         'book_id' => 'required|integer',
         'page_number' => 'required|integer',
         'translated_text' => 'required|string',
+        'score' => 'nullable|integer',
+        'AIfeedback' => 'nullable|string',
+        'AItext' => 'nullable|string',
     ]);
 
     $page = Page::where('book_id', $request->book_id)
@@ -62,6 +66,9 @@ class PageController extends Controller
 
     $translation = $page->translations()->firstOrNew(['user_id' => auth()->id()]);
     $translation->translated_text = $request->translated_text;
+    $translation->score = $request->score;
+    $translation->AI_feedback = $request->AIfeedback;
+    $translation->AI_text = $request->AItext;
     $translation->save();
 
     return response()->json(['message' => '保存しました']);

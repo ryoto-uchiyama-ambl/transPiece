@@ -22,3 +22,6 @@ export async function GET(req: NextRequest) {
         return new NextResponse('Failed to fetch content', { status: 500 });
     }
 }
+
+
+

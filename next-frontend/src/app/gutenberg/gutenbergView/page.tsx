@@ -38,7 +38,7 @@ export default function BookDetailPage() {
 
     const paginateText = (raw: string) => {
         const paragraphs = raw.split(/\n{2,}/).filter(Boolean);
-        const chunkSize = 10;
+        const chunkSize = 5;
         const chunks: string[] = [];
 
         for (let i = 0; i < paragraphs.length; i += chunkSize) {

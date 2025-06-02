@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
@@ -16,6 +15,7 @@ interface Translation {
     translatedText: string;
     score: number;
     AIfeedback: string;
+    AItext: string;
 }
 
 interface PageData {
@@ -100,6 +100,8 @@ export default function BookTranslationPreview() {
             setLoading(true);
             try {
                 await api.get('/sanctum/csrf-cookie');
+                await api.post('/api/currentBook', { book_id });
+
                 const res = await api.get(`/api/book/${book_id}`);
                 setPages(res.data.pages); // Laravel 側から受け取る形式に対応
             } catch (err) {
@@ -176,13 +178,65 @@ export default function BookTranslationPreview() {
         }
     };
 
+    const scoring = async () => {
+        closePopup();
+
+        const current = pages[currentPage - 1];
+        const bookText = current.content;
+        const translatedText = current?.translations[0]?.translatedText ?? '';
+
+        if (!translatedText.trim()) {
+            console.warn("翻訳が未入力です");
+            return;
+        }
+
+        try {
+            await api.get('/sanctum/csrf-cookie'); // Laravel Sanctum CSRF
+            const response = await api.post('/api/grade-translation', {
+                book_text: bookText,
+                translated_text: translatedText,
+            });
+
+            const { score, feedback, AItext } = response.data;
+
+            // 採点結果をstateに反映
+            setPages(prev =>
+                prev.map((page, idx) => {
+                    if (idx === currentPage - 1) {
+                        const updatedTranslations = [...page.translations];
+                        if (updatedTranslations.length > 0) {
+                            updatedTranslations[0] = {
+                                ...updatedTranslations[0],
+                                score,
+                                AIfeedback: feedback,
+                                AItext: AItext
+                            };
+                        }
+                        return {
+                            ...page,
+                            translations: updatedTranslations,
+                        };
+                    }
+                    return page;
+                })
+            );
+            // 現在の翻訳を保存
+            await saveTranslation();
+
+        } catch (err) {
+            console.error('単語の翻訳に失敗しました', err);
+        } finally {
+            setTranslatingWord(false);
+        }
+    }
+
     const avgScore = translation ? translation.score : 0;
 
     const saveTranslation = async () => {
         const current = pages[currentPage - 1];
         const translation = current.translations[0];
 
-        if (!translation || !translation.translatedText) return;
+        // if ((!translation || !translation.translatedText) && (!translation.AItext || !translation.AItext)) return;
 
         try {
             await api.get('/sanctum/csrf-cookie');
@@ -190,6 +244,9 @@ export default function BookTranslationPreview() {
                 book_id,
                 page_number: current.page_number,
                 translated_text: translation.translatedText,
+                score: translation.score,
+                AIfeedback: translation.AIfeedback,
+                AItext: translation.AItext,
             });
         } catch (err) {
             console.error('翻訳の保存に失敗しました', err);
@@ -222,6 +279,13 @@ export default function BookTranslationPreview() {
                                                 ...updatedTranslations[0],
                                                 translatedText: newText,
                                             };
+                                        } else {
+                                            updatedTranslations.push({
+                                                translatedText: newText,
+                                                score: 0,
+                                                AIfeedback: '',
+                                                AItext: '',
+                                            });
                                         }
                                         return {
                                             ...page,
@@ -236,7 +300,7 @@ export default function BookTranslationPreview() {
 
 
                     {/* AI採点 */}
-                    <AIScore score={avgScore} feedback={translation?.AIfeedback ?? ''} />
+                    <AIScore score={avgScore} feedback={translation?.AIfeedback ?? ''} AIText={translation?.AItext ?? ''} />
                 </div>
 
                 {/* ページネーション */}
@@ -245,7 +309,7 @@ export default function BookTranslationPreview() {
                     totalPages={pages.length}
                     onPrev={() => changePage('prev')}
                     onNext={() => changePage('next')}
-                    onGrade={() => {/* 採点処理（未実装） */ }}
+                    onGrade={() => scoring()}
                 />
             </div>
 

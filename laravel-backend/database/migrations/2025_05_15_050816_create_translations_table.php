@@ -18,6 +18,7 @@ return new class extends Migration
             $table->longText('translated_text')->nullable();
             $table->float('score')->nullable();
             $table->longText('AI_feedback')->nullable();
+            $table->longText('AI_text')->nullable();
             $table->timestamps();
 
             $table->unique(['user_id', 'page_id']);

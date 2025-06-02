@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Api\BookController;
 use App\Http\Controllers\Api\PageController;
+use App\Http\Controllers\Api\ChatController;
 
 /*
 |--------------------------------------------------------------------------
@@ -47,3 +48,5 @@ Route::post('/translate-word', function (Request $request) {
 });
 
 Route::post('/saveTranslation', [PageController::class, 'saveTranslation']);
+Route::post('/currentBook', [BookController::class, 'saveCurrentBook']);
+Route::post('/grade-translation', [ChatController::class, 'gradeTranslation']);

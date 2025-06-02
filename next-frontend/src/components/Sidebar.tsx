@@ -6,7 +6,7 @@ import "remixicon/fonts/remixicon.css";
 import Link from 'next/link';
 
 export default function CollapsibleSidebar() {
-    const [open, setOpen] = useState(true);
+    const [open, setOpen] = useState(false);
     const pathname = usePathname();
 
     const links = [

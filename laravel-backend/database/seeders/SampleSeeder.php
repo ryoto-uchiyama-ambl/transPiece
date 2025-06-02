@@ -9,6 +9,7 @@ use App\Models\Book;
 use App\Models\Page;
 use App\Models\Progress;
 use App\Models\Translation;
+use App\Models\Vocabulary;
 
 class SampleSeeder extends Seeder
 {
@@ -47,5 +48,8 @@ class SampleSeeder extends Seeder
                     }
                 }
         });
+
+        Vocabulary::factory()
+        ->count(100)->create();
     }
 }

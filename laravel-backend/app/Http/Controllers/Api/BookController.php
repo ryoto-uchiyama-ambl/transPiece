@@ -9,6 +9,7 @@ use App\Models\Progress;
 use App\Http\Requests\StoreBookRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use App\Models\User;
 
 class BookController extends Controller
 {
@@ -84,6 +85,22 @@ class BookController extends Controller
             'favorite' => $progress->is_favorite,
             'message' => $progress->is_favorite ? 'お気に入りに追加しました' : 'お気に入りを解除しました',
         ]);
+    }
+
+    public function saveCurrentBook(Request $request)
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            $user->id = 1;
+        }
+
+        $bookId = $request->input('book_id');
+
+        // User モデルを使用して現在の本を保存
+        User::where('id', $user->id)->update(['book_id' => $bookId]);
+
+        return response()->json(['message' => '現在の本を保存しました']);
     }
 }
 
