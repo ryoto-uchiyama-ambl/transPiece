@@ -126,6 +126,11 @@ export default function BookTranslationPreview() {
             const response = await api.post('/api/translate-word', { word });
             const translation = response.data.translations[0]?.text || '翻訳結果がありません';
 
+            if (translation !== '翻訳結果がありません') {
+                const page = pages[currentPage - 1]
+                await api.post('/api/saveWord', {word, translation, book_id, page_id:page.page_number});
+            }
+
             // 少し遅延を入れてモックAPIのように見せる (実際の実装では削除)
             await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -136,7 +141,12 @@ export default function BookTranslationPreview() {
                 visible: true
             });
         } catch (err) {
-            console.error('単語の翻訳に失敗しました', err);
+            setWordPopup({
+                word,
+                translation: '翻訳に失敗しました',
+                position: { x, y },
+                visible: true
+            });
         } finally {
             setTranslatingWord(false);
         }

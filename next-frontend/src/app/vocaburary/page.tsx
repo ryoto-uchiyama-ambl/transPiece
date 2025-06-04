@@ -148,8 +148,8 @@ export default function VocabularyPage() {
 
     return (
         <div className="flex min-h-screen bg-gray-100">
-            <div className="flex-1 ml-16 lg:ml-64">
-                <main className="p-6">
+            <div className="flex-1 ml-16 lg:ml-16">
+                {/* <main className="p-6"> */}
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <h1 className="text-2xl font-bold text-gray-800 mb-6">英日単語リスト</h1>
 
@@ -269,7 +269,7 @@ export default function VocabularyPage() {
                             </button>
                         </div>
                     </div>
-                </main>
+                {/* </main> */}
             </div>
         </div>
     );
