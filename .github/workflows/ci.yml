@@ -22,9 +22,17 @@ jobs:
           cp .env.example .env
           composer install
           ./vendor/bin/sail up -d
-          ./vendor/bin/sail composer install
-          ./vendor/bin/sail artisan key:generate
-          ./vendor/bin/sail artisan migrate --force
+
+      - name: Wait for MySQL to be ready
+        working-directory: ./laravel-backend
+        run: ./vendor/bin/sail artisan sail:wait-for-mysql
+
+      - name: Run laravel setup
+        working-directory: ./laravel-backend
+        run: |
+            ./vendor/bin/sail composer install
+            ./vendor/bin/sail artisan key:generate
+            ./vendor/bin/sail artisan migrate --force
 
       - name: Run Laravel Tests
         working-directory: ./laravel-backend
