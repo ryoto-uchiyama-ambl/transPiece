@@ -2,9 +2,9 @@ name: CI Test
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'feature/*']
   pull_request:
-    branches: [main]
+    branches: [main, 'feature/*']
 
 jobs:
   laravel-tests:
@@ -20,11 +20,6 @@ jobs:
           MYSQL_PASSWORD: password
         ports:
           - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
 
     steps:
       - uses: actions/checkout@v3
@@ -33,7 +28,7 @@ jobs:
         run: docker version
 
       - name: Start Laravel Sail
-        working-directory: ./laravel-app
+        working-directory: ./laravel-backend
         run: |
           cp .env.example .env
           ./vendor/bin/sail up -d
@@ -42,7 +37,7 @@ jobs:
           ./vendor/bin/sail artisan migrate --force
 
       - name: Run Laravel Tests
-        working-directory: ./laravel-app
+        working-directory: ./laravel-backend
         run: ./vendor/bin/sail test
 
   next-tests:
