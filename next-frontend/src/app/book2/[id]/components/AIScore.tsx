@@ -41,7 +41,7 @@ const AIScorePanel = ({ score, feedback, AIText }: AIScorePanelProps) => {
             </div> */}
 
             <div className="border-t border-gray-100 pt-4 overflow-y-auto max-h-[600px] pr-2">
-                <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
+                <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
                     <p className="text-sm text-gray-700 font-medium mb-2">コメント:</p>
                     <p className="text-sm text-gray-600 bg-gray-50 p-4 rounded-lg border border-gray-200">
                         {feedback || 'AIからのコメントはまだありません。'}
@@ -50,7 +50,7 @@ const AIScorePanel = ({ score, feedback, AIText }: AIScorePanelProps) => {
                     <p className="text-sm text-gray-600 bg-gray-50 p-4 rounded-lg border border-gray-200 whitespace-pre-wrap">
                         {formatAIText(AIText)}
                     </p>
-                </p>
+                </div>
             </div>
 
         </div>

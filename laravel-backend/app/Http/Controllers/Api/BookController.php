@@ -17,10 +17,6 @@ class BookController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user) {
-            $user->id = 1;
-        }
-
         // Progress 経由で保存した本一覧を取得
         $progresses = Progress::with('book')
             ->where('user_id', $user->id)
@@ -90,10 +86,6 @@ class BookController extends Controller
     public function saveCurrentBook(Request $request)
     {
         $user = Auth::user();
-
-        if (!$user) {
-            $user->id = 1;
-        }
 
         $bookId = $request->input('book_id');
 

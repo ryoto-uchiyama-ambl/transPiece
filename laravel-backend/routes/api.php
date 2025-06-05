@@ -29,7 +29,7 @@ Route::post('/register', [AuthController::class, 'register']);
 
 Route::post('/addBook', [BookController::class, 'store']);
 //Route::middleware('auth:sanctum')->get('/books', [BookController::class, 'index']);
-Route::get('/books', [BookController::class, 'index']);
+Route::middleware('auth:sanctum')->get('/books', [BookController::class, 'index']);
 Route::post('/books/{book}/toggleFavorite', [BookController::class, 'toggleFavorite']);
 Route::get('/book/{book}', [PageController::class, 'show']);
 
