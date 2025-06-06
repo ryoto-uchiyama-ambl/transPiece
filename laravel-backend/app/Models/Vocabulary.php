@@ -15,5 +15,6 @@ class Vocabulary extends Model
     'translation',
     'book_id',
     'page_id',
+    'language',
     ];
 }
