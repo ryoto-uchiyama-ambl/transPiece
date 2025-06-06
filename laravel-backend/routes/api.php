@@ -52,3 +52,4 @@ Route::post('/saveTranslation', [PageController::class, 'saveTranslation']);
 Route::post('/currentBook', [BookController::class, 'saveCurrentBook']);
 Route::post('/grade-translation', [ChatController::class, 'gradeTranslation']);
 Route::post('/saveWord', [VocabularyController::class, 'saveWord']);
+Route::get('/vocabulary', [VocabularyController::class, 'index']);

@@ -11,6 +11,25 @@ use Illuminate\Support\Facades\Log;
 
 class VocabularyController extends Controller
 {
+    public function index()
+    {
+        $user = Auth::user();
+
+        $vocabulary = Vocabulary::where('user_id', $user->id)->get()
+        ->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'word' => $item->word,
+                'translation' => $item->translation,
+                'part_of_speech' => $item->part_of_speech,
+                'language' => $item->language === 'en' ? 'English' : $item->language,
+                'is_understanding' => (bool) $item->is_understanding,
+            ];
+        });
+
+        return response()->json($vocabulary);
+    }
+
     public function saveWord(Request $request) {
 
         $user = Auth::user();
@@ -21,8 +40,6 @@ class VocabularyController extends Controller
         // 'book_id' => 'required|integer',
         // 'page_id' => 'required|integer',
         // ]);
-
-        Log::info($request);
 
         // 同じ単語があれば更新、なければ作成
         $vocabulary = Vocabulary::firstOrNew([
