@@ -29,31 +29,14 @@ export default function ReviewPage() {
     }, []);
 
     const handleRate = async (grade: Rating) => {
-
-        console.log('repeat前:' ,currentCard.fsrsCard.due);
-        console.log('repeat前:' ,currentCard.fsrsCard.state);
-
         if (!currentCard) return;
 
         const now = new Date();
 
-        console.log('currentCard:', currentCard.fsrsCard);
-        console.log((currentCard.fsrsCard.due).toString());
         const date = new Date(currentCard.fsrsCard.due);
-        console.log(date);
         currentCard.fsrsCard.due = date;
         const scheduling = f.repeat(currentCard.fsrsCard, now) as Record<Rating, { card: any; log: any }>;
-        console.log(scheduling);
         const { card: updatedCard, log } = scheduling[grade];
-
-        console.log('更新前 state:', currentCard.fsrsCard.state);
-        console.log('更新後 state:', updatedCard.state);
-        console.log('更新前 due:', currentCard.fsrsCard.due);
-        console.log('更新後 due:', updatedCard.due);
-
-        console.log('updatedCard:', updatedCard);
-
-
 
         // APIでスケジュール更新（例: /api/review/{id}）
         try {

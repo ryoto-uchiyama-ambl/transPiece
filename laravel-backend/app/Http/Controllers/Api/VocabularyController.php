@@ -121,7 +121,6 @@ class VocabularyController extends Controller
                     'back' => $schedule->vocabulary->translation,
                 ];
             });
-
         return response()->json($cards);
     }
 
