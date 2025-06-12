@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import api from '../../../lib/api';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 
 interface Book {
@@ -22,21 +23,32 @@ export default function HomePage() {
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({ total: 0, favorites: 0, recentlyAdded: '' });
     const [isFavorite, setIsFavorite] = useState(false);
+    const router = useRouter();
 
     useEffect(() => {
+        const checkAuth = async () => {
+            try {
+                await api.get('/api/user');
+            } catch (err: any) {
+                if (err.response && err.response.status === 401) {
+                    router.push('/login');
+                }
+            }
+        };
         const fetchBooks = async () => {
             try {
                 await api.get('/sanctum/csrf-cookie');
                 const res = await api.get('/api/books');
                 setBooks(res.data.books);
                 setStats(res.data.stats);
-            } catch (err) {
+            } catch (err: any) {
+                if (err.response && err.response.status === 401) return;
                 console.error('取得失敗:', err);
             } finally {
                 setLoading(false);
             }
         };
-
+        checkAuth();
         fetchBooks();
     }, []);
 
@@ -65,7 +77,16 @@ export default function HomePage() {
                 favorites: res.data.favorite ? prevStats.favorites + 1 : prevStats.favorites - 1
             }));
         } catch (error) {
-            console.error('お気に入り切り替え失敗', error)
+            console.error('お気に入り切り替え失敗', error);
+        }
+    }
+
+    const changeCurrentBook = async (bookId: number) => {
+        try {
+            await api.get('/sanctum/csrf-cookie');
+            const res = await api.post(`api/books/${bookId}/changeCurrentBook`);
+        } catch (error) {
+            console.error('現在の本切り替え失敗', error);
         }
     }
 
@@ -192,8 +213,7 @@ export default function HomePage() {
                                         )}
                                         <div className="flex justify-between items-center">
                                             <a
-                                                // href={`/book/${book.id}`}
-                                                href={`/book2/${book.id}`}
+                                                href={`/book/${book.id}`}
                                                 className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium flex items-center text-sm transition"
                                             >
                                                 翻訳を試みる

@@ -1,15 +1,21 @@
-
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import api from '../../../../lib/api';
 import { useParams } from 'next/navigation';
 import axios from 'axios';
+import BookHeader from './components/BookHeader';
+import OriginalText from './components/OriginalText';
+import UserTranslation from './components/UserTranslation';
+//import WordPopup from './components/WordPopup';
+import AIScore from './components/AIScore';
+import PaginationControls from './components/PaginationControls';
 
 interface Translation {
     translatedText: string;
     score: number;
     AIfeedback: string;
+    AItext: string;
 }
 
 interface PageData {
@@ -85,7 +91,9 @@ export default function BookTranslationPreview() {
         visible: false
     });
     const [clickedWord, setClickedWord] = useState<string | null>(null);
-
+    const [spokenWord, setSpokenWord] = useState<string | null>(null);
+    const [spokenWordIndex, setSpokenWordIndex] = useState<number | null>(null);
+    const [isSpeaking, setIsSpeaking] = useState(false);
     const params = useParams();
     const book_id = params.id;
 
@@ -94,6 +102,8 @@ export default function BookTranslationPreview() {
             setLoading(true);
             try {
                 await api.get('/sanctum/csrf-cookie');
+                await api.post('/api/currentBook', { book_id });
+
                 const res = await api.get(`/api/book/${book_id}`);
                 setPages(res.data.pages); // Laravel 側から受け取る形式に対応
             } catch (err) {
@@ -118,6 +128,11 @@ export default function BookTranslationPreview() {
             const response = await api.post('/api/translate-word', { word });
             const translation = response.data.translations[0]?.text || '翻訳結果がありません';
 
+            if (translation !== '翻訳結果がありません') {
+                const page = pages[currentPage - 1]
+                await api.post('/api/saveWord', { word, translation, book_id, page_id: page.page_number });
+            }
+
             // 少し遅延を入れてモックAPIのように見せる (実際の実装では削除)
             await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -128,7 +143,12 @@ export default function BookTranslationPreview() {
                 visible: true
             });
         } catch (err) {
-            console.error('単語の翻訳に失敗しました', err);
+            setWordPopup({
+                word,
+                translation: '翻訳に失敗しました',
+                position: { x, y },
+                visible: true
+            });
         } finally {
             setTranslatingWord(false);
         }
@@ -138,6 +158,41 @@ export default function BookTranslationPreview() {
         e.preventDefault();
         const rect = e.currentTarget.getBoundingClientRect();
         translateWord(word, rect.left, rect.top + window.scrollY);
+    };
+
+    // 読み上げ処理
+    const handleSpeak = () => {
+        if (isSpeaking) {
+            window.speechSynthesis.cancel();
+            setIsSpeaking(false);
+            setSpokenWord(null);
+            return;
+        }
+        const utterance = new window.SpeechSynthesisUtterance(currentData.content);
+        utterance.lang = "en-US";
+        utterance.onboundary = (event: any) => {
+            if (event.name === 'word') {
+                // 単語リストを取得
+                const words = currentData.content.split(/(\s+|[.,?!;:()[\]{}""''\-–—])/g).filter(Boolean);
+                // charIndexからインデックスを特定
+                let acc = 0;
+                for (let i = 0; i < words.length; i++) {
+                    acc += words[i].length;
+                    if (acc > event.charIndex) {
+                        setSpokenWord(words[i]);
+                        setSpokenWordIndex(i);
+                        break;
+                    }
+                }
+            }
+        };
+        utterance.onend = () => {
+            setIsSpeaking(false);
+            setSpokenWord(null);
+            setSpokenWordIndex(null);
+        };
+        window.speechSynthesis.speak(utterance);
+        setIsSpeaking(true);
     };
 
     const closePopup = () => {
@@ -170,45 +225,75 @@ export default function BookTranslationPreview() {
         }
     };
 
-    const avgScore = translation ? translation.score : 0;
+    const scoring = async () => {
+        closePopup();
 
-    // 原文を単語ごとに分割してクリック可能にする
-    const renderInteractiveText = (text: string) => {
-        // 単語と句読点などを正規表現で分割
-        const words = text.split(/(\s+|[.,?!;:()[\]{}""''\-–—])/g).filter(Boolean);
+        const current = pages[currentPage - 1];
+        const bookText = current.content;
+        const translatedText = current?.translations[0]?.translatedText ?? '';
 
-        return words.map((word, index) => {
-            // スペースや句読点の場合はそのまま表示
-            if (/^\s+$|^[.,?!;:()[\]{}""''\-–—]$/.test(word)) {
-                return <span key={index}>{word}</span>;
-            }
+        if (!translatedText.trim()) {
+            console.warn("翻訳が未入力です");
+            return;
+        }
 
-            // 単語の場合はクリック可能に
-            return (
-                <span
-                    key={index}
-                    onClick={(e) => handleWordClick(e, word)}
-                    className={`cursor-pointer transition-colors duration-200 ${clickedWord === word ? 'bg-blue-200 text-blue-800' : 'hover:text-blue-600'
-                        }`}
-                >
-                    {word}
-                </span>
+        try {
+            await api.get('/sanctum/csrf-cookie'); // Laravel Sanctum CSRF
+            const response = await api.post('/api/grade-translation', {
+                book_text: bookText,
+                translated_text: translatedText,
+            });
+
+            const { score, feedback, AItext } = response.data;
+
+            // 採点結果をstateに反映
+            setPages(prev =>
+                prev.map((page, idx) => {
+                    if (idx === currentPage - 1) {
+                        const updatedTranslations = [...page.translations];
+                        if (updatedTranslations.length > 0) {
+                            updatedTranslations[0] = {
+                                ...updatedTranslations[0],
+                                score,
+                                AIfeedback: feedback,
+                                AItext: AItext
+                            };
+                        }
+                        return {
+                            ...page,
+                            translations: updatedTranslations,
+                        };
+                    }
+                    return page;
+                })
             );
-        });
-    };
+            // 現在の翻訳を保存
+            await saveTranslation();
+
+        } catch (err) {
+            console.error('単語の翻訳に失敗しました', err);
+        } finally {
+            setTranslatingWord(false);
+        }
+    }
+
+    const avgScore = translation ? translation.score : 0;
 
     const saveTranslation = async () => {
         const current = pages[currentPage - 1];
         const translation = current.translations[0];
 
-        if(!translation || !translation.translatedText) return;
-
+        if(!translation) return;
+        
         try {
             await api.get('/sanctum/csrf-cookie');
             await api.post('/api/saveTranslation', {
                 book_id,
                 page_number: current.page_number,
                 translated_text: translation.translatedText,
+                score: translation.score,
+                AIfeedback: translation.AIfeedback,
+                AItext: translation.AItext,
             });
         } catch (err) {
             console.error('翻訳の保存に失敗しました', err);
@@ -218,127 +303,65 @@ export default function BookTranslationPreview() {
     return (
         <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
             <div className="max-w-8xl mx-auto pl-6">
-                <header className="mb-8">
-                    <div className="flex justify-between items-center">
-                        <h1 className="text-3xl font-bold text-gray-800">書籍翻訳プレビュー</h1>
-                        <div className="bg-white px-4 py-2 rounded-lg shadow text-sm text-gray-600 font-medium">
-                            ページ {currentPage} / {pages.length}
-                        </div>
-                    </div>
-                </header>
+                <BookHeader currentPage={currentPage} totalPages={pages.length} />
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* 原文 */}
-                    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow min-h-[700px]">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-semibold text-gray-700">原文</h2>
-                            <div className="flex space-x-2">
-                                <span className="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">English</span>
-                                <span className="text-xs font-medium text-blue-500 bg-blue-50 px-3 py-1 rounded-full">クリックで単語翻訳</span>
-                            </div>
-                        </div>
-                        <div className="border-t border-gray-100 pt-4 overflow-y-auto max-h-[600px] pr-2">
-                            <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-                                {renderInteractiveText(currentData.content)}
-                            </p>
-                        </div>
-                    </div>
+                    <OriginalText
+                        content={currentData.content}
+                        clickedWord={clickedWord}
+                        spokenWord={spokenWord}
+                        spokenWordIndex={spokenWordIndex}
+                        onWordClick={handleWordClick}
+                        onSpeakClick={handleSpeak}
+                        isSpeaking={isSpeaking}
+                    />
 
                     {/* ユーザー翻訳 */}
-                    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow min-h-[700px]">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-semibold text-gray-700">あなたの翻訳</h2>
-                            <span className="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">日本語</span>
-                        </div>
-                        <div className="border-t border-gray-100 pt-4">
-                            <textarea
-                                value={translation?.translatedText ?? ''}
-                                onChange={(e) => {
-                                    const newText = e.target.value;
-                                    setPages((prevPages) =>
-                                        prevPages.map((page, idx) => {
-                                            if (idx === currentPage - 1) {
-                                                const updatedTranslations = [...page.translations];
-                                                if (updatedTranslations.length > 0) {
-                                                    updatedTranslations[0] = {
-                                                        ...updatedTranslations[0],
-                                                        translatedText: newText,
-                                                    };
-                                                }
-                                                return {
-                                                    ...page,
-                                                    translations: updatedTranslations,
-                                                };
-                                            }
-                                            return page;
-                                        })
-                                    );
-                                }}
-                                className="w-full h-[600px] resize-none border border-gray-300 rounded-lg p-4 text-gray-800 leading-relaxed focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                placeholder="ここに翻訳を書いてください…"
-                            />
-                        </div>
-                    </div>
+                    <UserTranslation
+                        translatedText={translation?.translatedText ?? ''}
+                        onChange={(newText) => {
+                            setPages((prevPages) =>
+                                prevPages.map((page, idx) => {
+                                    if (idx === currentPage - 1) {
+                                        const updatedTranslations = [...page.translations];
+                                        if (updatedTranslations.length > 0) {
+                                            updatedTranslations[0] = {
+                                                ...updatedTranslations[0],
+                                                translatedText: newText,
+                                            };
+                                        } else {
+                                            updatedTranslations.push({
+                                                translatedText: newText,
+                                                score: 0,
+                                                AIfeedback: '',
+                                                AItext: '',
+                                            });
+                                        }
+                                        return {
+                                            ...page,
+                                            translations: updatedTranslations,
+                                        };
+                                    }
+                                    return page;
+                                })
+                            );
+                        }}
+                    />
+
 
                     {/* AI採点 */}
-                    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow min-h-[700px]">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-semibold text-gray-700">AI採点</h2>
-                            <span className="text-xs font-medium text-white bg-indigo-500 px-3 py-1 rounded-full">
-                                スコア: {avgScore}
-                            </span>
-                        </div>
-                        <div className="border-t border-gray-100 pt-4">
-                            <div className="space-y-4">
-                                <div className="mt-6">
-                                    <p className="text-sm text-gray-700 font-medium mb-2">コメント:</p>
-                                    <p className="text-sm text-gray-600 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                        {translation?.AIfeedback ?? 'AIからのコメントはまだありません。'}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <AIScore score={avgScore} feedback={translation?.AIfeedback ?? ''} AIText={translation?.AItext ?? ''} />
                 </div>
 
                 {/* ページネーション */}
-                <div className="flex justify-center mt-10">
-                    <div className="inline-flex rounded-md shadow-sm">
-                        <button
-                            onClick={() => changePage('prev')}
-                            disabled={currentPage === 1}
-                            className={`relative inline-flex items-center rounded-l-md px-4 py-2 text-sm font-medium ${currentPage === 1
-                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-indigo-600'
-                                } border border-gray-300`}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <line x1="19" y1="12" x2="5" y2="12" />
-                                <polyline points="12 19 5 12 12 5" />
-                            </svg>
-                            前へ
-                        </button>
-                        <button
-                            className="relative inline-flex items-center px-4 py-2 text-sm font-medium bg-blue-200 text-gray-700 border border-gray-300 hover:bg-blue-300 hover:text-white"
-                        >
-                            採点
-                        </button>
-                        <button
-                            onClick={() => changePage('next')}
-                            disabled={currentPage === pages.length}
-                            className={`relative inline-flex items-center rounded-r-md px-4 py-2 text-sm font-medium ${currentPage === pages.length
-                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-indigo-600'
-                                } border border-gray-300`}
-                        >
-                            次へ
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <line x1="5" y1="12" x2="19" y2="12" />
-                                <polyline points="12 5 19 12 12 19" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
+                <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={pages.length}
+                    onPrev={() => changePage('prev')}
+                    onNext={() => changePage('next')}
+                    onGrade={() => scoring()}
+                />
             </div>
 
             {/* 翻訳ポップアップ */}

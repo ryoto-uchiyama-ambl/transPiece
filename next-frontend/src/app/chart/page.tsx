@@ -390,7 +390,7 @@ export default function ChartPage() {
                     <StatCard
                         title="総翻訳数"
                         value="142"
-                        icon="ri-translate-2-line"
+                        icon="ri-translate-ai-2"
                         trend={{ positive: true, value: "12" }}
                         color="indigo"
                     />

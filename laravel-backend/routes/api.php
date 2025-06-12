@@ -49,10 +49,11 @@ Route::post('/translate-word', function (Request $request) {
 });
 
 Route::post('/saveTranslation', [PageController::class, 'saveTranslation']);
-Route::post('/currentBook', [BookController::class, 'saveCurrentBook']);
+Route::middleware('auth:sanctum')->post('/currentBook', [BookController::class, 'saveCurrentBook']);
 Route::post('/grade-translation', [ChatController::class, 'gradeTranslation']);
 Route::post('/saveWord', [VocabularyController::class, 'saveWord']);
 Route::middleware('auth:sanctum')->get('/vocabulary', [VocabularyController::class, 'index']);
 Route::middleware('auth:sanctum')->post('/vocabulary', [VocabularyController::class, 'store']);
 Route::middleware('auth:sanctum')->get('/review-cards', [VocabularyController::class, 'reviewCards']);
 Route::middleware('auth:sanctum')->post('/review/{id}', [VocabularyController::class, 'update']);
+Route::middleware('auth:sanctum')->get('/getCurrentBook', [BookController::class, 'getCurrentBook']);

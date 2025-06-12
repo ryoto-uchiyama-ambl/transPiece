@@ -75,9 +75,9 @@ export default function BookSearchPage() {
             <div className="max-w-4xl mx-auto">
                 {/* ヘッダーセクション */}
                 <div className="mb-8 text-center">
-                    <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white mb-2">英語名著を検索</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white mb-2">名著を検索</h1>
                     <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                        Gutenbergプロジェクトの膨大な無料電子書籍から、お好きな英語の名著を見つけてください。
+                        Gutenbergプロジェクトの膨大な電子書籍から、お好きな名著を見つけてください。
                     </p>
                 </div>
 
@@ -205,7 +205,7 @@ export default function BookSearchPage() {
                             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-900/30 mb-4">
                                 <span className="ri-book-open-line text-3xl text-indigo-600 dark:text-indigo-400"></span>
                             </div>
-                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">著名な英語書籍を探索</h3>
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">著名な書籍を探索</h3>
                             <p className="mt-2 text-gray-500 dark:text-gray-400 max-w-md mx-auto">
                                 世界中の名著や古典を見つけて読むことができます。
                                 著者名やタイトルで検索を始めましょう。

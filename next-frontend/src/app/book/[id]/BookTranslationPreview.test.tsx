@@ -2,6 +2,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import BookTranslationPreview from './page';
 import api from '../../../../lib/api';
 import '@testing-library/jest-dom';
+import userEvent from '@testing-library/user-event';
+import { useServerInsertedHTML } from 'next/navigation';
 
 // APIをモック
 jest.mock('../../../../lib/api');
@@ -56,6 +58,38 @@ describe('BookTranslationPreview', () => {
         await waitFor(() => {
             expect(screen.getByText('Thisisatestsentence')).toBeInTheDocument();
             expect(screen.getByDisplayValue('これはテスト文です。')).toBeInTheDocument();
+        });
+    });
+
+    test('APIが正しく呼ばれることの確認', async () => {
+        render(<BookTranslationPreview />);
+        await waitFor(() => {
+            expect(api.get).toHaveBeenCalledWith('/sanctum/csrf-cookie');
+            expect(api.get).toHaveBeenCalledWith('/api/book/1');
+        });
+    });
+
+    test('翻訳テキストの編集', async () => {
+        render(<BookTranslationPreview />);
+        await waitFor(() => {
+            screen.getByDisplayValue('これはテスト文です。')
+        });
+
+        const textarea = screen.getByDisplayValue('これはテスト文です。');
+        expect(textarea).toBeEnabled();
+
+        await userEvent.clear(textarea);
+        await userEvent.type(textarea, '編集した翻訳テキスト');
+
+        expect(screen.getByDisplayValue('編集した翻訳テキスト')).toBeInTheDocument();
+    });
+
+    test('APIエラー時にエラーメッセージを表示', async () => {
+        (api.get as jest.Mock).mockRejectedValueOnce(new Error('APIエラー'));
+        render(<BookTranslationPreview />);
+
+        await waitFor(() => {
+            expect(screen.getByText(/ページデータがありません。/)).toBeInTheDocument();
         });
     });
 });

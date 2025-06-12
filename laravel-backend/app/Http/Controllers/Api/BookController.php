@@ -10,6 +10,8 @@ use App\Http\Requests\StoreBookRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
+
 
 class BookController extends Controller
 {
@@ -93,6 +95,18 @@ class BookController extends Controller
         User::where('id', $user->id)->update(['book_id' => $bookId]);
 
         return response()->json(['message' => '現在の本を保存しました']);
+    }
+
+    public function getCurrentBook(Request $request) {
+        $user = Auth::user();
+
+        $current_book = User::where('id', $user->id)->value('book_id');
+
+        Log::info($current_book);
+
+        return response()->json(
+            ['current_book' => $current_book, 'message' => $current_book ? '現在の本を取得しました' : '現在の本を取得できませんでした']
+        );
     }
 }
 

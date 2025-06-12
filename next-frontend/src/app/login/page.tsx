@@ -3,17 +3,20 @@
 import { useState } from 'react';
 import api from '../../../lib/api';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
+    const router = useRouter();
 
     const handleLogin = async () => {
         try {
             await api.get('/sanctum/csrf-cookie');
             await api.post('/api/login', { email, password });
-            setMessage('ログイン成功');
+            router.push('/home');
         } catch (error: any) {
             setMessage('ログイン失敗');
         }

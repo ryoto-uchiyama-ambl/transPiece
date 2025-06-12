@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-    const token = request.cookies.get('XSRF-TOKEN'); // Laravel Sanctum 用のトークンなど
+    const token = request.cookies.get('laravel_session'); // Laravel Sanctum 用のトークンなど
 
     const pathname = request.nextUrl.pathname;
 
