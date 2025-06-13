@@ -10,6 +10,11 @@ import UserTranslation from './components/UserTranslation';
 //import WordPopup from './components/WordPopup';
 import AIScore from './components/AIScore';
 import PaginationControls from './components/PaginationControls';
+import { createEmptyCard } from 'ts-fsrs';
+import { v4 as uuidv4 } from 'uuid';
+import { useRouter } from 'next/navigation';
+
+
 
 interface Translation {
     translatedText: string;
@@ -30,6 +35,11 @@ interface WordPopupProps {
     position: { x: number; y: number };
     onClose: () => void;
 }
+
+type User = {
+    id: number;
+    name: string;
+};
 
 // 単語翻訳用のポップアップコンポーネント
 const WordPopup = ({ word, translation, position, onClose }: WordPopupProps) => {
@@ -94,8 +104,26 @@ export default function BookTranslationPreview() {
     const [spokenWord, setSpokenWord] = useState<string | null>(null);
     const [spokenWordIndex, setSpokenWordIndex] = useState<number | null>(null);
     const [isSpeaking, setIsSpeaking] = useState(false);
+    const [user, setUser] = useState<User | null>(null);
     const params = useParams();
     const book_id = params.id;
+    const router = useRouter();
+
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                await api.get('/sanctum/csrf-cookie');
+                const response = await api.get('/api/user');
+                setUser(response.data);
+            } catch (err: any) {
+                if (err.response && err.response.status === 401) {
+                    router.push('/login');
+                }
+            }
+        };
+        fetchUser();
+    }, []);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -130,7 +158,16 @@ export default function BookTranslationPreview() {
 
             if (translation !== '翻訳結果がありません') {
                 const page = pages[currentPage - 1]
+                //vocaburary追加
                 await api.post('/api/saveWord', { word, translation, book_id, page_id: page.page_number });
+                //vocaburary_schedule追加
+                const card = createEmptyCard(new Date());
+                await api.post('/api/vocabulary', {
+                    front:word,
+                    back:translation,
+                    user_id:user?.id,
+                    fsrs_card:card,
+                })
             }
 
             // 少し遅延を入れてモックAPIのように見せる (実際の実装では削除)

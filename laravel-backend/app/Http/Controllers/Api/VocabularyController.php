@@ -17,7 +17,8 @@ class VocabularyController extends Controller
     {
         $user = Auth::user();
 
-        $vocabulary = Vocabulary::where('user_id', $user->id)->get()
+        $vocabulary = Vocabulary::with('schedule')
+            ->where('user_id', $user->id)->get()
             ->map(function ($item) {
                 return [
                     'id' => $item->id,
@@ -25,7 +26,8 @@ class VocabularyController extends Controller
                     'translation' => $item->translation,
                     'part_of_speech' => $item->part_of_speech,
                     'language' => $item->language === 'en' ? 'English' : $item->language,
-                    'is_understanding' => (bool) $item->is_understanding,
+                    'is_understanding' => optional($item->schedule)->state,
+                    'due' => optional($item->schedule)->due,
                 ];
             });
 
@@ -124,7 +126,8 @@ class VocabularyController extends Controller
         return response()->json($cards);
     }
 
-    public function update (Request $request, $id) {
+    public function update(Request $request, $id)
+    {
         $request->validate([
             'fsrsCard' => 'required|array',
             'log' => 'required|array',
@@ -160,5 +163,31 @@ class VocabularyController extends Controller
             'message' => 'Review updated successfully',
             'schedule' => $schedule,
         ]);
+    }
+
+    public function getVocabularyStudies()
+    {
+        $user = Auth::user();
+
+        $vocabulary = Vocabulary::with('schedule')
+            ->where('user_id', $user->id)
+            ->whereHas('schedule', function ($query) {
+                $query->where('due', '<=', now())
+                    ->whereNotNull('due');
+            })
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'word' => $item->word,
+                    'translation' => $item->translation,
+                    'part_of_speech' => $item->part_of_speech,
+                    'language' => $item->language === 'en' ? 'English' : $item->language,
+                    'is_understanding' => optional($item->schedule)->state,
+                    'due' => optional($item->schedule)->due,
+                ];
+            });
+
+        return response()->json($vocabulary);
     }
 }

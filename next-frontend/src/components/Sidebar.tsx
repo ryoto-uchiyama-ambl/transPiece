@@ -100,7 +100,7 @@ export default function CollapsibleSidebar() {
         { href: "/chart", icon: "ri-bar-chart-2-line", label: "Chart" },
         { href: "/message", icon: "ri-chat-3-line", label: "Message" },
         { href: "/user", icon: "ri-user-3-line", label: "User" },
-        { href: "/settings", icon: "ri-settings-4-line", label: "Settings" },
+        { href: "/setting", icon: "ri-settings-4-line", label: "Setting" },
     ];
 
     return (

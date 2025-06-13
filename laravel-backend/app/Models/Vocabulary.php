@@ -17,4 +17,8 @@ class Vocabulary extends Model
     'page_id',
     'language',
     ];
+
+    public function schedule() {
+        return $this->hasOne(VocabularySchedule::class);
+    }
 }

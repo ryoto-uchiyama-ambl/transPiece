@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\BookController;
 use App\Http\Controllers\Api\PageController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\VocabularyController;
+use SpomkyLabs\Pki\X509\Certificate\Extension\AccessDescription\AuthorityAccessDescription;
 
 /*
 |--------------------------------------------------------------------------
@@ -57,3 +58,19 @@ Route::middleware('auth:sanctum')->post('/vocabulary', [VocabularyController::cl
 Route::middleware('auth:sanctum')->get('/review-cards', [VocabularyController::class, 'reviewCards']);
 Route::middleware('auth:sanctum')->post('/review/{id}', [VocabularyController::class, 'update']);
 Route::middleware('auth:sanctum')->get('/getCurrentBook', [BookController::class, 'getCurrentBook']);
+Route::middleware('auth:sanctum')->get('/getVocabularyStudies', [VocabularyController::class, 'getVocabularyStudies']);
+
+Route::middleware('auth:sanctum')->post('/pushSubscribe', function (Request $request) {
+    $request->validate([
+        'endpoint' => 'required|string',
+        'publicKey' => 'required|string',
+        'authToken' => 'required|string',
+    ]);
+
+    $request->user()->pushSUbscriptions()->updateOrCreate(
+        ['endpoint' => $request->endpoint],
+        ['public_ley' => $request->publicKey, 'authToken' => $request->AuthToken]
+    );
+
+    return response()->json(['message' => 'Subscribed']);
+});

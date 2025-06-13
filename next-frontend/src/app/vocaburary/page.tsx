@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import api from '../../../lib/api';
+import { useRouter } from 'next/navigation';
 
 interface VocabularyItem {
     id: number;
@@ -9,7 +10,8 @@ interface VocabularyItem {
     translation: string;
     part_of_speech: string;
     language: string;
-    is_understanding: boolean;
+    is_understanding: number;
+    due_schedule: string;
 }
 
 export default function VocabularyPage() {
@@ -20,6 +22,7 @@ export default function VocabularyPage() {
     const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const router = useRouter();
 
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 20;
@@ -39,6 +42,7 @@ export default function VocabularyPage() {
                 part_of_speech: item.part_of_speech,
                 language: item.language,
                 is_understanding: item.is_understanding,
+                due_schedule: item.due,
             }));
 
             setVocabulary(vocabularyData);
@@ -76,17 +80,27 @@ export default function VocabularyPage() {
         currentPage * itemsPerPage
     );
 
-    const toggleUnderstanding = async (id: number) => {
-        try {
-            setVocabulary(prev =>
-                prev.map(word =>
-                    word.id === id ? { ...word, is_understanding: !word.is_understanding } : word
-                )
-            );
-        } catch (err) {
-            console.error('理解状態の更新に失敗しました:', err);
+    // const toggleUnderstanding = async (id: number) => {
+    //     try {
+    //         setVocabulary(prev =>
+    //             prev.map(word =>
+    //                 word.id === id ? { ...word, is_understanding: !word.is_understanding } : word
+    //             )
+    //         );
+    //     } catch (err) {
+    //         console.error('理解状態の更新に失敗しました:', err);
+    //     }
+    // };
+
+    const getStateLabel = (state: number) => {
+        switch (state) {
+            case 0: return '未学習';
+            case 1: return '学習中';
+            case 2: return '理解済み';
+            case 3: return '復習済み';
+            default: return '不明';
         }
-    };
+    }
 
     const getPartOfSpeechLabel = (partOfSpeech: string): string => {
         const labels: Record<string, string> = {
@@ -180,6 +194,8 @@ export default function VocabularyPage() {
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">品詞</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">言語</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">理解状態</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">次の学習日</th>
+
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
@@ -197,16 +213,21 @@ export default function VocabularyPage() {
                                                 {word.language}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <button
-                                                onClick={() => toggleUnderstanding(word.id)}
-                                                className={`px-3 py-1 rounded-full text-xs font-medium ${word.is_understanding
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-yellow-100 text-yellow-800'
-                                                    }`}
-                                            >
-                                                {word.is_understanding ? '理解済み' : '学習中'}
-                                            </button>
+                                        <td className="px-6 py-4 text-sm font-medium">
+                                            <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                                                {getStateLabel(word.is_understanding)}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                            {word.due_schedule
+                                                ? new Date(word.due_schedule).toLocaleString('ja-JP', {
+                                                    year: 'numeric',
+                                                    month: '2-digit',
+                                                    day: '2-digit',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })
+                                                : ''}
                                         </td>
                                     </tr>
                                 )) : (
@@ -250,13 +271,20 @@ export default function VocabularyPage() {
                         </button>
                     </div>
 
-                    {/* リフレッシュ */}
+                    {/* リフレッシュ　& 学習 */}
                     <div className="mt-6 flex justify-end">
                         <button
                             onClick={fetchVocabulary}
-                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 mr-6"
                         >
                             データを更新
+                        </button>
+
+                        <button
+                            onClick={() => router.push('/study')}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                        >
+                            単語を学習
                         </button>
                     </div>
                 </div>
