@@ -1,0 +1,142 @@
+erDiagram
+
+%% ============================
+%% Library Management System ER Diagram
+%% ============================
+
+users ||--o{ translations : ""
+users ||--o{ progress : ""
+users ||--o{ vocabularies : ""
+users ||--o{ vocabulary_schedules : ""
+users ||--o{ personal_access_tokens : ""
+
+users {
+    bigint id PK
+    bigint book_id FK
+    varchar(255) name
+    varchar(255) email
+    timestamp email_verified_at
+    varchar(255) password
+    varchar(100) remember_token
+    timestamp created_at
+    timestamp updated_at
+}
+
+password_reset_tokens {
+    varchar(255) email
+    varchar(255) token
+    timestamp created_at
+}
+
+personal_access_tokens {
+    bigint id PK
+    varchar(255) tokenable_type
+    bigint tokenable_id
+    varchar(255) name
+    varchar(64) token
+    text abillities
+    timestamp last_used_at
+    timestamp expires_at
+    timestamp created_at
+    timestamp updated_at
+}
+
+books ||--o{ pages : ""
+books ||--o{ progress : ""
+books ||--o{ vocabularies : ""
+
+books {
+    bigint id PK
+    varchar(255) title
+    text gutenberg_url
+    varchar(255) author
+    int downloads
+    varchar(10) lang
+    int page_count
+    timestamp created_at
+    timestamp updated_at
+}
+
+pages ||--o{ translations : ""
+pages ||--o{ vocabularies : ""
+
+
+pages {
+    bigint id PK
+    bigint book_id FK
+    int page_number
+    longtext content
+    timestamp created_at
+    timestamp updated_at
+}
+
+progress {
+    bigint id PK
+    bigint user_id FK
+    bigint book_id FK
+    int current_page
+    tinyint(1) is_favorite
+    timestamp created_at
+    timestamp updated_at
+}
+
+translations {
+    bigint id PK
+    bigint user_id FK
+    bigint page_id FK
+    longtext translated_text
+    double(2) score
+    longtext AI_feedback
+    longtext AI_text
+    timestamp created_at
+    timestamp updated_at
+}
+
+vocabulary_schedules ||--o{ vocabulary_logs : ""
+vocabulary_schedules }o--|| vocabularies : ""
+
+
+vocabularies {
+    bigint id PK
+    bigint user_id FK
+    bigint book_id FK
+    bigint page_id FK
+    varchar(255) word
+    varchar(255) translation
+    longtext definition
+    longtext example
+    varchar(255) part_of_speech
+    varchar(255) language
+    tinyint(1) is_understanding
+    timestamp created_at
+    timestamp updated_at
+}
+
+vocabulary_schedules {
+    bigint id PK
+    bigint vocabulary_id FK
+    bigint user_id FK
+    double(2) stability
+    double(2) difficulty
+    double(2) reps
+    double(2) elapsed_days
+    double(2) scheduled_days
+    double(2) learning_steps
+    int state
+    timestamp last_review
+    timestamp due
+    timestamp created_at
+    timestamp updated_at
+}
+
+vocabulary_logs {
+    bigint id PK
+    bigint vocabulary_schedule_id FK
+    tinyint rating
+    double(2) stability
+    double(2) difficulty
+    double(2) elapsed_days
+    timestamp reviewed_at
+    timestamp created_at
+    timestamp updated_at
+}
