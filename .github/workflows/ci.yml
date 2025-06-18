@@ -20,17 +20,21 @@ jobs:
         working-directory: ./laravel-backend
         run: |
           cp .env.example .env
-          composer install
+          docker run --rm -v $(pwd):/app -w /app composer install
           ./vendor/bin/sail up -d
 
       - name: Wait for MySQL to be ready
         working-directory: ./laravel-backend
-        run: sleep 10
+        run: |
+          for i in {1..30}; do
+            nc -z mysql 3306 && echo "MySQL is up" && break
+            echo "Waiting for MySQL..."
+            sleep 2
+          done
 
       - name: Run laravel setup
         working-directory: ./laravel-backend
         run: |
-            ./vendor/bin/sail composer install
             ./vendor/bin/sail artisan key:generate
             ./vendor/bin/sail artisan migrate --force
 
