@@ -15,7 +15,7 @@
 //             await savePushSubscription(subscription);
 //             alert('Push 通知を登録しました');
 //         } else {
-//             alert('通知の許可が得られませんでした');
+//             alert('通知の許可が得られませんでしたf');
 //         }
 //     };
 
