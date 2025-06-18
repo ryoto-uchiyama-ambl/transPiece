@@ -15,7 +15,7 @@ describe('ログインページ', () => {
         cy.contains('ログイン失敗').should('be.visible');
     });
 
-    it('新規登録リンクが存在し、クリックで遷移する', () => {
+    it('新規登録リンクが存在し、クリックで遷移するよ', () => {
         cy.visit('/login');
         cy.contains('新規登録').should('be.visible').click();
         cy.url().should('include', '/register');
