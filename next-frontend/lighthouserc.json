@@ -1,0 +1,33 @@
+{
+    "ci": {
+        "collect": {
+            "url": [
+                "http://localhost:3000"
+            ],
+            "startServerCommand": "npm run dev",
+            "numberOfRuns": 3,
+            "startServerReadyTimeout": 10000,
+            "chromeFlags": ["--headless", "--no-sandbox", "--disable-gpu", "--remote-debugging-port=9222", "--disable-setuid-sandbox"],
+            "chromePath": "/snap/bin/chromium"
+        },
+        "assert": {
+            "assertions": {
+                "categories:performance": [
+                    "warn",
+                    {
+                        "minScore": 0.9
+                    }
+                ],
+                "categories:accessibility": [
+                    "warn",
+                    {
+                        "minScore": 0.9
+                    }
+                ]
+            }
+        },
+        "upload": {
+            "target": "temporary-public-storage"
+        }
+    }
+}
