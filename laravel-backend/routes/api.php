@@ -24,17 +24,22 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+//　ログイン
 Route::post('/login', [AuthController::class, 'login']);
+// ログアウト
 Route::post('/logout', [AuthController::class, 'logout']);
+// ユーザー登録
 Route::post('/register', [AuthController::class, 'register']);
-
+// 本保存
 Route::post('/addBook', [BookController::class, 'store']);
-//Route::middleware('auth:sanctum')->get('/books', [BookController::class, 'index']);
+// 本一覧
 Route::middleware('auth:sanctum')->get('/books', [BookController::class, 'index']);
+// お気に入り変更
 Route::post('/books/{book}/toggleFavorite', [BookController::class, 'toggleFavorite']);
+// 本表示
 Route::get('/book/{book}', [PageController::class, 'show']);
 
-
+// 単語翻訳
 Route::post('/translate-word', function (Request $request) {
     $word = $request->input('word');
 
@@ -49,15 +54,25 @@ Route::post('/translate-word', function (Request $request) {
     return $response->json();
 });
 
+// 翻訳保存
 Route::post('/saveTranslation', [PageController::class, 'saveTranslation']);
+// 現在の本保存
 Route::middleware('auth:sanctum')->post('/currentBook', [BookController::class, 'saveCurrentBook']);
+// AI採点評価取得
 Route::post('/grade-translation', [ChatController::class, 'gradeTranslation']);
+// 単語保存
 Route::post('/saveWord', [VocabularyController::class, 'saveWord']);
+// 単語一覧
 Route::middleware('auth:sanctum')->get('/vocabulary', [VocabularyController::class, 'index']);
+// **
 Route::middleware('auth:sanctum')->post('/vocabulary', [VocabularyController::class, 'store']);
+// **
 Route::middleware('auth:sanctum')->get('/review-cards', [VocabularyController::class, 'reviewCards']);
+// カード変更
 Route::middleware('auth:sanctum')->post('/review/{id}', [VocabularyController::class, 'update']);
+// 現在の本取得
 Route::middleware('auth:sanctum')->get('/getCurrentBook', [BookController::class, 'getCurrentBook']);
+// 学習対象取得
 Route::middleware('auth:sanctum')->get('/getVocabularyStudies', [VocabularyController::class, 'getVocabularyStudies']);
 
 Route::middleware('auth:sanctum')->post('/pushSubscribe', function (Request $request) {
