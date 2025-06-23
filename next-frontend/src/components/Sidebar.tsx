@@ -51,7 +51,7 @@ export default function CollapsibleSidebar() {
         const fetchCurrentBook = async () => {
             try {
                 await api.get('/sanctum/csrf-cookie');
-                const res = await api.get('/api/getCurrentBook');
+                const res = await api.get('/api/currentBook');
                 const bookId = res.data.current_book;
 
                 if (bookId) {

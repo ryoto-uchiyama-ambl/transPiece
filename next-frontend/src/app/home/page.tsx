@@ -67,7 +67,7 @@ export default function HomePage() {
     const toggleFavorite = async (bookId: number) => {
         try {
             await api.get('/sanctum/csrf-cookie');
-            const res = await api.post(`/api/books/${bookId}/toggleFavorite`);
+            const res = await api.post(`/api/books/${bookId}/favorite`);
             const updatedBooks = books.map(book =>
                 book.id === bookId ? { ...book, is_favorite: res.data.favorite } : book
             );

@@ -170,7 +170,7 @@ export default function BookTranslationPreview() {
 
         try {
             await api.get('/sanctum/csrf-cookie'); // Laravel Sanctum CSRF
-            const response = await api.post('/api/translate-word', { word });
+            const response = await api.post('/api/translateWord', { word });
             const translation = response.data.translations[0]?.text || '翻訳結果がありません';
 
             if (translation !== '翻訳結果がありません') {
@@ -293,7 +293,7 @@ export default function BookTranslationPreview() {
 
         try {
             await api.get('/sanctum/csrf-cookie'); // Laravel Sanctum CSRF
-            const response = await api.post('/api/grade-translation', {
+            const response = await api.post('/api/gradeTranslation', {
                 book_text: bookText,
                 translated_text: translatedText,
             });
@@ -341,7 +341,7 @@ export default function BookTranslationPreview() {
 
         try {
             await api.get('/sanctum/csrf-cookie');
-            await api.post('/api/saveTranslation', {
+            await api.post('/api/translations', {
                 book_id,
                 page_number: current.page_number,
                 translated_text: translation.translatedText,
