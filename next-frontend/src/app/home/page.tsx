@@ -21,7 +21,7 @@ interface Book {
 export default function HomePage() {
     const [books, setBooks] = useState<Book[]>([]);
     const [loading, setLoading] = useState(true);
-    const [stats, setStats] = useState({ total: 0, favorites: 0, recentlyAdded: '' });
+    const [stats, setStats] = useState({ totalBooks: 0, totalPages: 0, favorites: 0, recentlyAdded: '' });
     const [isFavorite, setIsFavorite] = useState(false);
     const router = useRouter();
 
@@ -122,7 +122,7 @@ export default function HomePage() {
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">総書籍数</p>
-                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{loading ? '...' : stats.total}</h3>
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{loading ? '...' : stats.totalBooks}</h3>
                             </div>
                         </div>
                     </div>
@@ -134,7 +134,7 @@ export default function HomePage() {
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">総翻訳数</p>
-                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{loading ? '...' : stats.total}</h3>
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{loading ? '...' : stats.totalPages}</h3>
                             </div>
                         </div>
                     </div>

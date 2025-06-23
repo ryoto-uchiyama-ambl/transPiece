@@ -39,6 +39,7 @@ class BookController extends Controller
         })->unique('id')->values();
         // 取得した本の情報を元に統計情報を作成
         $totalBooks = $books->count();
+        $totalPages = $books->sum('current_page');
         $favoriteBooks = $progresses->filter(fn($progress) => $progress->is_favorite)->count();
         $latestProgress = $progresses->sortByDesc('updated_at')->first();
         $recentlyAdded = $latestProgress ? $latestProgress->created_at->diffForHumans() : '不明';
@@ -46,7 +47,8 @@ class BookController extends Controller
         return response()->json([
             'books' => $books,
             'stats' => [
-                'total' => $totalBooks,
+                'totalBooks' => $totalBooks,
+                'totalPages' => $totalPages,
                 'favorites' => $favoriteBooks,
                 'recentlyAdded' => $recentlyAdded,
             ]
