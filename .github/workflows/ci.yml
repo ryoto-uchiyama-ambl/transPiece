@@ -1,62 +1,69 @@
-# name: CI Test
+name: CI Test
 
-# on:
-#   push:
-#     branches: [main, develop]
-#   pull_request:
-#     branches: [main, develop]
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
 
-# jobs:
-#   laravel-tests:
-#     runs-on: ubuntu-latest
+jobs:
+  laravel-tests:
+    runs-on: ubuntu-latest
 
-#     steps:
-#       - uses: actions/checkout@v3
+    steps:
+      - uses: actions/checkout@v3
 
-#       - name: Set up Docker
-#         run: docker version
+      - name: Set up Docker
+        run: docker version
 
-#       - name: Start Laravel Sail
-#         working-directory: ./laravel-backend
-#         run: |
-#           cp .env.example .env
-#           docker run --rm -v $(pwd):/app -w /app composer install
-#           ./vendor/bin/sail up -d
+      - name: Start Laravel Sail
+        working-directory: ./laravel-backend
+        run: |
+          cp .env.example .env
+          docker run --rm -v $(pwd):/app -w /app composer install
+          ./vendor/bin/sail up -d
 
-#       - name: Wait for MySQL to be ready
-#         working-directory: ./laravel-backend
-#         run: |
-#           for i in {1..30}; do
-#             nc -z mysql 3306 && echo "MySQL is up" && break
-#             echo "Waiting for MySQL..."
-#             sleep 2
-#           done
+      - name: Wait for MySQL to be ready
+        working-directory: ./laravel-backend
+        run: |
+          for i in {1..10}; do
+            nc -z mysql 3306 && echo "MySQL is up" && break
+            echo "Waiting for MySQL..."
+            sleep 2
+          done
 
-#       - name: Run laravel setup
-#         working-directory: ./laravel-backend
-#         run: |
-#             ./vendor/bin/sail artisan key:generate
-#             ./vendor/bin/sail artisan migrate --force
+      - name: Docker logs
+        run: |
+          docker ps -a
+          cat .env
+          docker compose ps
+          docker compose logs mysql || true
 
-#       - name: Run Laravel Tests
-#         working-directory: ./laravel-backend
-#         run: ./vendor/bin/sail test
+      - name: Run laravel setup
+        working-directory: ./laravel-backend
+        run: |
+            ./vendor/bin/sail artisan key:generate
+            ./vendor/bin/sail artisan migrate --force
 
-#   next-tests:
-#     runs-on: ubuntu-latest
+      - name: Run Laravel Tests
+        working-directory: ./laravel-backend
+        run: ./vendor/bin/sail test
 
-#     steps:
-#       - uses: actions/checkout@v3
+  next-tests:
+    runs-on: ubuntu-latest
 
-#       - name: Use Node.js
-#         uses: actions/setup-node@v3
-#         with:
-#           node-version: '18'
+    steps:
+      - uses: actions/checkout@v3
 
-#       - name: Install dependencies
-#         working-directory: ./next-frontend
-#         run: npm ci
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
-#       - name: Run Next.js Tests
-#         working-directory: ./next-frontend
-#         run: npx jest
+      - name: Install dependencies
+        working-directory: ./next-frontend
+        run: npm ci
+
+      - name: Run Next.js Tests
+        working-directory: ./next-frontend
+        run: npx jest
