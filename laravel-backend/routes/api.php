@@ -31,16 +31,16 @@ Route::post('/logout', [AuthController::class, 'logout']);
 // ユーザー登録
 Route::post('/register', [AuthController::class, 'register']);
 // 本保存
-Route::post('/addBook', [BookController::class, 'store']);
+Route::middleware('auth:sanctum')->post('/books', [BookController::class, 'store']);
 // 本一覧
 Route::middleware('auth:sanctum')->get('/books', [BookController::class, 'index']);
 // お気に入り変更
-Route::post('/books/{book}/toggleFavorite', [BookController::class, 'toggleFavorite']);
+Route::middleware('auth:sanctum')->post('/books/{book}/favorite', [BookController::class, 'toggleFavorite']);
 // 本表示
-Route::get('/book/{book}', [PageController::class, 'show']);
+Route::middleware('auth:sanctum')->get('/book/{book}', [PageController::class, 'show']);
 
 // 単語翻訳
-Route::post('/translate-word', function (Request $request) {
+Route::middleware('auth:sanctum')->post('/translateWord', function (Request $request) {
     $word = $request->input('word');
 
     $response = Http::withHeaders([
@@ -55,13 +55,13 @@ Route::post('/translate-word', function (Request $request) {
 });
 
 // 翻訳保存
-Route::post('/saveTranslation', [PageController::class, 'saveTranslation']);
+Route::middleware('auth:sanctum')->post('/translations', [PageController::class, 'storeTranslation']);
 // 現在の本保存
-Route::middleware('auth:sanctum')->post('/currentBook', [BookController::class, 'saveCurrentBook']);
+Route::middleware('auth:sanctum')->post('/currentBook', [BookController::class, 'storeCurrentBook']);
 // AI採点評価取得
-Route::post('/grade-translation', [ChatController::class, 'gradeTranslation']);
+Route::middleware('auth:sanctum')->post('/gradeTranslation', [ChatController::class, 'gradeTranslation']);
 // 単語保存
-Route::post('/saveWord', [VocabularyController::class, 'saveWord']);
+Route::middleware('auth:sanctum')->post('/saveWord', [VocabularyController::class, 'saveWord']);
 // 単語一覧
 Route::middleware('auth:sanctum')->get('/vocabulary', [VocabularyController::class, 'index']);
 // **
@@ -71,7 +71,9 @@ Route::middleware('auth:sanctum')->get('/review-cards', [VocabularyController::c
 // カード変更
 Route::middleware('auth:sanctum')->post('/review/{id}', [VocabularyController::class, 'update']);
 // 現在の本取得
-Route::middleware('auth:sanctum')->get('/getCurrentBook', [BookController::class, 'getCurrentBook']);
+Route::middleware('auth:sanctum')->get('/currentBook', [BookController::class, 'showCurrentBook']);
+// 現在のページ取得
+Route::middleware('auth:sanctum')->get('/getCurrentPage', [PageController::class, 'getCurrentPage']);
 // 学習対象取得
 Route::middleware('auth:sanctum')->get('/getVocabularyStudies', [VocabularyController::class, 'getVocabularyStudies']);
 
