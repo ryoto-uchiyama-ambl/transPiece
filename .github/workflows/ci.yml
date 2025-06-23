@@ -26,18 +26,15 @@ jobs:
       - name: Wait for MySQL to be ready
         working-directory: ./laravel-backend
         run: |
-          for i in {1..10}; do
-            nc -z mysql 3306 && echo "MySQL is up" && break
+          for i in {1..5}; do
+            ./vendor/bin/sail mysql -h mysql -u sail -ppassword -e "SELECT 1" && echo "MySQL is up" && break
             echo "Waiting for MySQL..."
             sleep 2
-          done
+            done
 
       - name: Docker logs
-        run: |
-          docker ps -a
-          cat .env
-          docker compose ps
-          docker compose logs mysql || true
+        working-directory: ./laravel-backend
+        run: ./vendor/bin/sail exec laravel.test cat .env
 
       - name: Run laravel setup
         working-directory: ./laravel-backend
