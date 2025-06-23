@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\Page;
 use Illuminate\Support\Facades\Log;
+use App\Models\Progress;
 
 class PageController extends Controller
 {
@@ -72,6 +73,24 @@ class PageController extends Controller
     $translation->save();
 
     return response()->json(['message' => '保存しました']);
+    }
+
+    public function getCurrentPage(Request $request)
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+
+        $currentPage = Progress::where('user_id', $user->id)
+            ->where('book_id', $request->query('book_id'))
+            ->value('current_page');
+
+        return response()->json([
+            'current_page' => $currentPage,
+            'message' => '現在のページを取得しました'
+        ]);
     }
 }
 

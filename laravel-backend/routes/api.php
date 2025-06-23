@@ -72,6 +72,8 @@ Route::middleware('auth:sanctum')->get('/review-cards', [VocabularyController::c
 Route::middleware('auth:sanctum')->post('/review/{id}', [VocabularyController::class, 'update']);
 // 現在の本取得
 Route::middleware('auth:sanctum')->get('/getCurrentBook', [BookController::class, 'getCurrentBook']);
+// 現在のページ取得
+Route::middleware('auth:sanctum')->get('/getCurrentPage', [PageController::class, 'getCurrentPage']);
 // 学習対象取得
 Route::middleware('auth:sanctum')->get('/getVocabularyStudies', [VocabularyController::class, 'getVocabularyStudies']);
 

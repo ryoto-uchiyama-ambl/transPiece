@@ -136,10 +136,27 @@ export default function BookTranslationPreview() {
                 setPages(res.data.pages); // Laravel 側から受け取る形式に対応
             } catch (err) {
                 console.error('データの取得に失敗しました', err);
+            }
+        };
+
+        if (book_id) {
+            fetchData();
+        }
+    }, [book_id]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const res = await api.get(`/api/getCurrentPage?book_id=${book_id}`);
+                if (res.data.current_page) {
+                    setCurrentPage(res.data.current_page); // ← ここでページ番号をセット
+                }
+            } catch (err) {
+                console.error('現在のページ取得に失敗しました', err);
             } finally {
                 setLoading(false);
             }
-        };
+        }
 
         if (book_id) {
             fetchData();
@@ -163,10 +180,10 @@ export default function BookTranslationPreview() {
                 //vocaburary_schedule追加
                 const card = createEmptyCard(new Date());
                 await api.post('/api/vocabulary', {
-                    front:word,
-                    back:translation,
-                    user_id:user?.id,
-                    fsrs_card:card,
+                    front: word,
+                    back: translation,
+                    user_id: user?.id,
+                    fsrs_card: card,
                 })
             }
 
@@ -320,8 +337,8 @@ export default function BookTranslationPreview() {
         const current = pages[currentPage - 1];
         const translation = current.translations[0];
 
-        if(!translation) return;
-        
+        if (!translation) return;
+
         try {
             await api.get('/sanctum/csrf-cookie');
             await api.post('/api/saveTranslation', {
