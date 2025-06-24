@@ -5,8 +5,6 @@ import { usePathname } from 'next/navigation';
 import "remixicon/fonts/remixicon.css";
 import Link from 'next/link';
 import api from '../../lib/api';
-import { stringify } from 'querystring';
-import { Router } from 'next/router';
 import { useRouter } from 'next/navigation';
 
 export default function CollapsibleSidebar() {
@@ -25,7 +23,7 @@ export default function CollapsibleSidebar() {
                 await api.get('/sanctum/csrf-cookie');
                 const res = await api.get('/api/user');
                 setUser(res.data);
-            } catch (err) {
+            } catch {
                 setUser(null);
             }
         };
@@ -79,18 +77,18 @@ export default function CollapsibleSidebar() {
             setUser(null);
             setUserMenuOpen(false);
             router.push('/login');
-        } catch (err) {
+        } catch {
             alert('ログアウトに失敗しました');
         }
     }
 
-    const goToCurrentBook = () => {
-        if (currentBookId) {
-            router.push(`/book/${currentBookId}`);
-        }else {
-            alert('現在翻訳中の本はありません');
-        }
-    }
+    // const goToCurrentBook = () => {
+    //     if (currentBookId) {
+    //         router.push(`/book/${currentBookId}`);
+    //     }else {
+    //         alert('現在翻訳中の本はありません');
+    //     }
+    // }
 
     const links = [
         { href: "/home", icon: "ri-home-5-line", label: "Home" },

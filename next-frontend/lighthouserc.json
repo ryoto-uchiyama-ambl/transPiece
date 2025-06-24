@@ -2,13 +2,17 @@
     "ci": {
         "collect": {
             "url": [
-                "http://localhost:3000"
+                "http://localhost:3000/book/1"
             ],
-            "startServerCommand": "npm run dev",
+            "startServerCommand": "npm run start",
             "numberOfRuns": 3,
             "startServerReadyTimeout": 10000,
             "chromeFlags": ["--headless", "--no-sandbox", "--disable-gpu", "--remote-debugging-port=9222", "--disable-setuid-sandbox"],
-            "chromePath": "/snap/bin/chromium"
+            "chromePath": "/snap/bin/chromium",
+            "loginScript": "./scripts/login.js",
+            "settings": {
+                "emulatedFormFactor": "desktop"
+            }
         },
         "assert": {
             "assertions": {

@@ -22,7 +22,6 @@ export default function HomePage() {
     const [books, setBooks] = useState<Book[]>([]);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({ total: 0, favorites: 0, recentlyAdded: '' });
-    const [isFavorite, setIsFavorite] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -81,14 +80,14 @@ export default function HomePage() {
         }
     }
 
-    const changeCurrentBook = async (bookId: number) => {
-        try {
-            await api.get('/sanctum/csrf-cookie');
-            const res = await api.post(`api/books/${bookId}/changeCurrentBook`);
-        } catch (error) {
-            console.error('現在の本切り替え失敗', error);
-        }
-    }
+    // const changeCurrentBook = async (bookId: number) => {
+    //     try {
+    //         await api.get('/sanctum/csrf-cookie');
+    //         const res = await api.post(`api/books/${bookId}/changeCurrentBook`);
+    //     } catch (error) {
+    //         console.error('現在の本切り替え失敗', error);
+    //     }
+    // }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4 sm:px-6 lg:px-8">

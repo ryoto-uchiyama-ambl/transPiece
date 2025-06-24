@@ -2,11 +2,11 @@
   {
     "name": "minScore",
     "expected": 0.9,
-    "actual": 0.64,
+    "actual": 0.78,
     "values": [
-      0.61,
-      0.64,
-      0.64
+      0.78,
+      0.76,
+      0.61
     ],
     "operator": ">=",
     "passed": false,

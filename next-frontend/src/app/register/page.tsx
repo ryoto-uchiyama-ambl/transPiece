@@ -15,7 +15,7 @@ export default function RegisterPage() {
             await api.get('/sanctum/csrf-cookie');
             await api.post('/api/register', { name, email, password });
             setMessage('登録成功');
-        } catch (error: any) {
+        } catch {
             setMessage('登録失敗');
         }
     };
