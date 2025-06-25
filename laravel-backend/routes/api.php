@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -8,7 +9,9 @@ use App\Http\Controllers\Api\PageController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\VocabularyController;
 use App\Http\Controllers\Api\StatsController;
+use App\Http\Controllers\Api\MailController;
 /*
+
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
@@ -101,3 +104,9 @@ Route::middleware('auth:sanctum')->get('/stats/scoreDistribution', [StatsControl
 Route::middleware('auth:sanctum')->get('/stats/languages', [StatsController::class, 'languages']);
 // 最近の翻訳取得
 Route::middleware('auth:sanctum')->get('/stats/recentActivity', [StatsController::class, 'recentActivity']);
+// メール送信
+Route::middleware('auth:sanctum')->post('/email/resend', [MailController::class, 'resendVerificationEmail']);
+// ユーザープロファイル情報取得
+Route::middleware('auth:sanctum')->get('/user/profile', [ProfileController::class, 'show']);
+// ユーザー情報更新
+Route::middleware('auth:sanctum')->put('/user/profile', [ProfileController::class, 'update']);

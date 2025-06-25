@@ -65,7 +65,7 @@ export default function SettingsPage() {
                 setProfileForm({ name: profileRes.data.name, email: profileRes.data.email });
 
                 // 通知設定取得 (fun-018)
-                const notificationRes = await api.get('/api/user/notification-settings');
+                const notificationRes = await api.get('/api/user/notificationSettings');
                 setNotifications(notificationRes.data);
             } catch (err: any) {
                 if (err.response && err.response.status === 401) return;
@@ -195,8 +195,8 @@ export default function SettingsPage() {
                 {/* 成功・エラーメッセージ */}
                 {messages && (
                     <div className={`mb-6 p-4 rounded-lg ${messages.type === 'success'
-                            ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800'
-                            : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800'
+                        ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800'
+                        : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800'
                         }`}>
                         <div className="flex items-center">
                             <span className={`${messages.type === 'success' ? 'ri-check-line' : 'ri-error-warning-line'} mr-2`}></span>
@@ -214,8 +214,8 @@ export default function SettingsPage() {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`py-4 px-1 border-b-2 font-medium text-sm transition ${activeTab === tab.id
-                                            ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                                            : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'
+                                        ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'
                                         }`}
                                 >
                                     <span className={`${tab.icon} mr-2`}></span>
@@ -297,6 +297,16 @@ export default function SettingsPage() {
                                             <div className="text-sm text-gray-500 dark:text-gray-400">
                                                 <p>登録日: {profile?.created_at ? new Date(profile.created_at).toLocaleDateString('ja-JP') : '---'}</p>
                                                 <p>メール認証: {profile?.email_verified_at ? '完了' : '未完了'}</p>
+                                                {!profile?.email_verified_at && (
+                                                    <div className="mt-2">
+                                                        <button
+                                                            onClick={() => window.location.href = '/setting/verifyEmail'}
+                                                            className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition"
+                                                        >
+                                                            メール認証へ進む
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     )}
