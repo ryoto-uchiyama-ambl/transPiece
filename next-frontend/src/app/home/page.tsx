@@ -131,7 +131,7 @@ export default function HomePage() {
                                 <span className="ri-translate-2 text-xl text-blue-600 dark:text-blue-400"></span>
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">総翻訳数</p>
+                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">総翻訳ページ数</p>
                                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{loading ? '...' : stats.totalPages}</h3>
                             </div>
                         </div>

@@ -54,7 +54,7 @@ export default function BookDetailPage() {
     const uploadToLaravel = async () => {
         try {
             setIsSubmitting(true);
-            await api.post('/api/addBook', {
+            await api.post('/api/books', {
                 title,
                 gutenberg_url: url,
                 authors,

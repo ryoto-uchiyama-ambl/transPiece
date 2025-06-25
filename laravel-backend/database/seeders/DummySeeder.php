@@ -33,8 +33,9 @@ class DummySeeder extends Seeder
                 };
 
                 $currentPage = rand(0, $book->page_count);
+                $userId = rand(1, 20);
                 Progress::factory()->create([
-                    'user_id' => rand(1, 20), // ユーザーIDをランダムに設定
+                    'user_id' => $userId, // ユーザーIDをランダムに設定
                     'book_id' => $book->id,
                     'current_page' => $currentPage,
                     'is_favorite' => rand(0, 1),
@@ -47,6 +48,7 @@ class DummySeeder extends Seeder
 
                     foreach ($pages as $page) {
                         Translation::factory()->create([
+                            'user_id' => $userId,
                             'page_id' => $page->id,
                         ]);
                     }
