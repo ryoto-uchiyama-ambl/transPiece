@@ -34,6 +34,12 @@ class Handler extends ExceptionHandler
             return response()->json(['message' => '認証されていません'], 401);
         }
 
+        if ($request->expectsJson()) {
+        return response()->json([
+            'message' => '内部エラーが発生しました',
+        ], 500);
+    }
+
         return parent::render($request, $exception);
     }
 }

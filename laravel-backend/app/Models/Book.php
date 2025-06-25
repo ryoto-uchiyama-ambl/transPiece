@@ -43,7 +43,7 @@ class Book extends Model
         $book = self::create([
             'title' => $data['title'],
             'gutenberg_url' => $data['gutenberg_url'] ?? null,
-            'author' => $data['authors'] ?? null,
+            'author' => $data['author'] ?? null,
             'lang' => $data['lang'] ?? null,
             'downloads' => $data['downloads'] ?? 0,
             'page_count' => count($data['pages']) ?? 0,
@@ -78,7 +78,7 @@ class Book extends Model
     {
         // ユーザーがこの本にアクセスできるか確認
         return Progress::where('user_id', $userId)
-            ->where('book_id', $this->id)
+            ->where('book_id', $bookId)
             ->exists();
     }
 }

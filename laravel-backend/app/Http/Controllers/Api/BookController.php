@@ -18,10 +18,6 @@ class BookController extends Controller
     public function index()
     {
         $user = Auth::user();
-        if (!$user) {
-            return response()->json(['message' => '認証されていません'], 401);
-        }
-
 
         try {
             // Progress 経由で保存した本一覧を取得
@@ -78,8 +74,8 @@ class BookController extends Controller
                 return response()->json(['message' => 'このタイトルは既に存在します', 'book_id' => $book->id], 200);
             }
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json(['message' => '保存に失敗しました', 422]);
-        } catch (\Exception $e) {
+            return response()->json(['message' => '保存に失敗しました'], 422);
+        } catch (\Throwable $e) {
             return response()->json(['message' => '内部エラーが発生しました'], 500);
         }
     }
@@ -87,8 +83,9 @@ class BookController extends Controller
     public function toggleFavorite(Request $request, Book $book)
     {
         $user = Auth::user();
-        if (!$user) {
-            return response()->json(['message' => '認証されていません'], 401);
+
+        if(!$this->userHasBook($user->id, $book->id)) {
+            return response()->json(['message' => 'この書籍はあなたのライブラリに存在しません'], 403);
         }
 
         try {
@@ -96,11 +93,6 @@ class BookController extends Controller
             // 書籍存在チェック
             if (!$bookId) {
                 return response()->json(['error' => '書籍が存在しません'], 404);
-            }
-
-            //　書籍がユーザーのライブラリにあるかを確認
-            if (!Book::userHasAccess($user->id, $bookId)) {
-                return response()->json(['message' => 'この書籍はあなたのライブラリに存在しません'], 403);
             }
 
             $progress = Progress::firstOrCreate(
@@ -171,6 +163,11 @@ class BookController extends Controller
         } catch (\Exception $e) {
             return response()->json(['message' => '内部エラーが発生しました'], 500);
         }
+    }
+
+    protected function userHasBook(int $userId, int $bookId):bool
+    {
+        return Book::userHasAccess($userId, $bookId);
     }
 }
 
