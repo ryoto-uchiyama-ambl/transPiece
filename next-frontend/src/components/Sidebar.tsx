@@ -20,7 +20,6 @@ export default function CollapsibleSidebar() {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                await api.get('/sanctum/csrf-cookie');
                 const res = await api.get('/api/user');
                 setUser(res.data);
             } catch {
@@ -48,7 +47,6 @@ export default function CollapsibleSidebar() {
         }
         const fetchCurrentBook = async () => {
             try {
-                await api.get('/sanctum/csrf-cookie');
                 const res = await api.get('/api/getCurrentBook');
                 const bookId = res.data.current_book;
 

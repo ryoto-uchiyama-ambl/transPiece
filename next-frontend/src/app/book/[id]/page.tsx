@@ -110,7 +110,6 @@ export default function BookTranslationPreview() {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                await api.get('/sanctum/csrf-cookie');
                 const response = await api.get('/api/user');
                 setUser(response.data);
             } catch (err: any) {
@@ -126,7 +125,6 @@ export default function BookTranslationPreview() {
         const fetchData = async () => {
             setLoading(true);
             try {
-                await api.get('/sanctum/csrf-cookie');
                 await api.post('/api/currentBook', { book_id });
 
                 const res = await api.get(`/api/book/${book_id}`);
@@ -148,7 +146,6 @@ export default function BookTranslationPreview() {
         setClickedWord(word);
 
         try {
-            await api.get('/sanctum/csrf-cookie'); // Laravel Sanctum CSRF
             const response = await api.post('/api/translate-word', { word });
             const translation = response.data.translations[0]?.text || '翻訳結果がありません';
 
@@ -270,7 +267,6 @@ export default function BookTranslationPreview() {
         }
 
         try {
-            await api.get('/sanctum/csrf-cookie'); // Laravel Sanctum CSRF
             const response = await api.post('/api/grade-translation', {
                 book_text: bookText,
                 translated_text: translatedText,
@@ -316,7 +312,6 @@ export default function BookTranslationPreview() {
         if(!translation) return;
         
         try {
-            await api.get('/sanctum/csrf-cookie');
             await api.post('/api/saveTranslation', {
                 book_id,
                 page_number: current.page_number,

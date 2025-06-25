@@ -74,7 +74,7 @@ class DummySeeder extends Seeder
                     ->toArray();
 
                 // ランダムに単語数を決めてVocabularyを作成
-                $vocabularyCount = rand(1, 100);
+                $vocabularyCount = rand(1, 5);
 
                 for ($i = 0; $i < $vocabularyCount; $i++) {
                     $pageId = fake()->randomElement($validPageIds);

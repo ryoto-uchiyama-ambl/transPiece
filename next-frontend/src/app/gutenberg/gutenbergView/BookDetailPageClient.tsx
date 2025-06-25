@@ -54,7 +54,6 @@ export default function BookDetailPage() {
     const uploadToLaravel = async () => {
         try {
             setIsSubmitting(true);
-            await api.get('/sanctum/csrf-cookie');
             await api.post('/api/addBook', {
                 title,
                 gutenberg_url: url,
