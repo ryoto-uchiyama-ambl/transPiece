@@ -54,7 +54,6 @@ export default function ChartPage() {
             translations: { value: 0, positive: true },
             score: { value: 0, positive: true },
             books: { value: 0, positive: true },
-            streak: { value: 0, positive: true }
         }
     });
     const [isLoading, setIsLoading] = useState(true);
@@ -139,7 +138,7 @@ export default function ChartPage() {
             const response = await api.get('api/stats/recentActivity?limit=10');
             // API response format: { activities: [{ date, bookTitle, paragraphsTranslated, score, bookId }] }
             const formattedData = response.data.activities.map((item: { date: string; bookTitle: string; paragraphsTranslated: number; score: number; bookId: number; }) => ({
-                date: formatDate(item.date),
+                date: item.date,
                 bookTitle: item.bookTitle,
                 paragraphs: item.paragraphsTranslated,
                 score: item.score,
@@ -274,7 +273,7 @@ export default function ChartPage() {
     // Render loading state
     if (isLoading) {
         return (
-            <div className="pl-16 lg:pl-64 min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="pl-16 lg:pl-16 min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-600 mx-auto"></div>
                     <p className="mt-4 text-gray-600">データを読み込み中...</p>
@@ -286,7 +285,7 @@ export default function ChartPage() {
     // Render error state
     if (error) {
         return (
-            <div className="pl-16 lg:pl-64 min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="pl-16 lg:pl-16 min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
                     <div className="text-red-500 text-6xl mb-4">
                         <span className="ri-error-warning-line"></span>
@@ -344,7 +343,7 @@ export default function ChartPage() {
                         <ResponsiveContainer width="100%" height={400}>
                             <LineChart data={translationProgress}>
                                 <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="name" />
+                                <XAxis dataKey="name" interval={0} tickFormatter={(value,index) => index % 2 === 0 ? value : ''} />
                                 <YAxis yAxisId="left" />
                                 <YAxis yAxisId="right" orientation="right" />
                                 <Tooltip />
@@ -363,7 +362,7 @@ export default function ChartPage() {
                                     type="monotone"
                                     dataKey="score"
                                     name="平均スコア"
-                                    stroke="#818cf8"
+                                    stroke="#46e5a8"
                                     strokeWidth={2}
                                 />
                             </LineChart>
@@ -461,18 +460,6 @@ export default function ChartPage() {
                                 </tbody>
                             </table>
                         </div>
-
-                        <ResponsiveContainer width="100%" height={250}>
-                            <BarChart data={recentActivity.slice(0, 5)}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="date" />
-                                <YAxis />
-                                <Tooltip formatter={(value, name) => [value, name === 'score' ? 'スコア' : '段落数']} />
-                                <Legend />
-                                <Bar dataKey="score" name="スコア" fill="#4f46e5" />
-                                <Bar dataKey="paragraphs" name="段落数" fill="#818cf8" />
-                            </BarChart>
-                        </ResponsiveContainer>
                     </div>
                 );
 
@@ -482,7 +469,7 @@ export default function ChartPage() {
     };
 
     return (
-        <div className="pl-16 lg:pl-64 min-h-screen bg-gray-50">
+        <div className="pl-16 lg:pl-16 min-h-screen bg-gray-50">
             <div className="max-w-7xl mx-auto p-6">
                 <div className="mb-6">
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">翻訳分析ダッシュボード</h1>
@@ -516,7 +503,6 @@ export default function ChartPage() {
                         title="連続日数"
                         value={summaryStats.streakDays}
                         icon="ri-calendar-check-line"
-                        trend={summaryStats.trends.streak}
                         color="blue"
                     />
                 </div>

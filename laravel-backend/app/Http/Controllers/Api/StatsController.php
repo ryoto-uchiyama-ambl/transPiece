@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Progress;
 use App\Models\Translation;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class StatsController extends Controller
 {
@@ -15,62 +16,90 @@ class StatsController extends Controller
     {
         $user = Auth::user();
 
-        // 総翻訳ページ数取得
-        $totalTranslations = Progress::where('user_id', $user->id)->sum('current_page');
-        // 点数の平均取得
-        $progresses = Progress::with('book.pages.translations')->where('user_id', $user->id)->get();
-        foreach ($progresses as $progress) {
-            $book = $progress->book;
-            if (!$book)
-                continue;
-            foreach ($book->pages as $page) {
-                foreach ($page->translations as $translation) {
-                    if ($translation->user_id === $user->id && $translation->score !== null) {
-                        $scores[] = $translation->score;
-                    }
+        // 指標を取得
+        $getTotalTranslations = fn($start, $end) => Progress::where('user_id', $user->id)
+            ->when($start && $end, fn($q) => $q->whereBetween('created_at', [$start, $end]))
+            ->sum('current_page');
+        $getAverageScore = function ($start = null, $end = null) use ($user) {
+            $query = Translation::where('user_id', $user->id)
+                ->whereNotNull('score');
+            if ($start && $end) {
+                $query->whereBetween('created_at', [$start, $end]);
+            }
+            return $query->avg('score') ?? 0;
+        };
+        $getCompletedBooks = function ($start = null, $end = null) use ($user) {
+            $query = Progress::with('book')->where('user_id', $user->id);
+            if ($start && $end) {
+                $query->whereBetween('created_at', [$start, $end]);
+            }
+            return $query->get()
+                ->filter(fn($p) => $p->book && $p->current_page === $p->book->page_count)
+                ->count();
+        };
+        $getStreak = function ($start = null, $end = null) use ($user) {
+            $query = Translation::where('user_id', $user->id);
+            if ($start && $end) {
+                $query->whereBetween('created_at', [$start, $end]);
+            }
+            $dates = $query->selectRaw('DATE(created_at) as date')
+                ->distinct()
+                ->orderByDesc('date')
+                ->pluck('date')
+                ->map(fn($d) => Carbon::parse($d)->toDateString());
+
+            $currentDay = Carbon::today('Asia/Tokyo');
+            $streak = 0;
+            foreach ($dates as $date) {
+                if ($date === $currentDay->toDateString()) {
+                    $streak++;
+                    $currentDay->subDay();
+                } else {
+                    break;
                 }
             }
-        }
-        $averageScore = count($scores) > 0 ? array_sum($scores) / count($scores) : 0;
+            return $streak;
+        };
+
+
+        // 総翻訳ページ数
+        $totalTranslations = Progress::where('user_id', $user->id)->sum('current_page');
+
+        // 点数の平均
+        $averageScore = $getAverageScore(null, null);
+
         // 読了書籍
-        $completedBooks = Progress::with('book')->where('user_id', $user->id)->get()
-        ->filter(function ($progress) {
-            return $progress->book && $progress->current_page === $progress->book->page_count;
-        })->count();
+        $completedBooks = $getCompletedBooks(null, null);
+
         // 連続日数
-        $translatedDates = Translation::where('user_id', $user->id)->selectRaw('DATE(created_at) as date')
-        ->distinct()->orderByDesc('date')->pluck('date')->map(fn($d) => Carbon::parse($d)->toDateString());
-        $today = Carbon::today();
-        $streak = 0;
-        foreach($translatedDates as $date) {
-            if($date === $today->toDateString()) {
-                $today->subday();
-            }elseif($date === $today->copy()->subDay()->toDateString()) {
-                $streak++;
-                $today->subDay();
-            }else {
-                break;
-            }
-        }
-        $streakDays = $streak;
+        $streakDays = $getStreak(null, null);
+
+        // トレンド
+        $now = Carbon::now('Asia/Tokyo');
+        $thisPeriodStart = $now->copy()->startOfMonth()->subMonth()->startOfDay();
+        $thisPeriodEnd = $now->copy()->endOfDay();
+        $prevPeriodStart = $thisPeriodStart->copy()->subMonth()->startOfDay();
+        $prevPeriodEnd = $thisPeriodStart->copy()->subSecond();
+        // 今期と前期の値
+        $thisTotalTranslations = $getTotalTranslations($thisPeriodStart, $thisPeriodEnd);
+        $prevTotalTranslations = $getTotalTranslations($prevPeriodStart, $prevPeriodEnd);
+
+        $thisAverageScore = $getAverageScore($thisPeriodStart, $thisPeriodEnd);
+        $prevAverageScore = $getAverageScore($prevPeriodStart, $prevPeriodEnd);
+
+        $thisCompletedBooks = $getCompletedBooks($thisPeriodStart, $thisPeriodEnd);
+        $prevCompletedBooks = $getCompletedBooks($prevPeriodStart, $prevPeriodEnd);
+
+        // 変化量と増減判定
+        $calcTrend = fn($thisValue, $prevValue) => [
+            'value' => round($thisValue - $prevValue, 2),
+            'positive' => ($thisValue - $prevValue) >= 0
+        ];
 
         $trends = [
-            'translations' => [
-                'value' => 12,
-                'positive' => true,
-            ],
-            'score' => [
-                'value' => 3.5,
-                'positive' => true,
-            ],
-            'books' => [
-                'value' => 4,
-                'positive' => false,
-            ],
-            'streak' => [
-                'value' => 40,
-                'positive' => true,
-            ]
+            'translations' => $calcTrend($thisTotalTranslations, $prevTotalTranslations),
+            'score' => $calcTrend($thisAverageScore, $prevAverageScore),
+            'books' => $calcTrend($thisCompletedBooks, $prevCompletedBooks),
         ];
 
         return response()->json([
@@ -78,7 +107,7 @@ class StatsController extends Controller
             'averageScore' => number_format($averageScore, 2),
             'completedBooks' => $completedBooks,
             'streakDays' => $streakDays,
-            'trends' => $trends
+            'trends' => $trends,
         ]);
     }
 
@@ -93,122 +122,130 @@ class StatsController extends Controller
             ], 422);
         }
 
-        // ダミー
-        $data = match ($timeframe) {
-            'week' => [
-                ['period' => '2025-06-19', 'translations' => 4, 'score' => 76.5],
-                ['period' => '2025-06-20', 'translations' => 5, 'score' => 80.1],
-                ['period' => '2025-06-21', 'translations' => 7, 'score' => 78.0],
-                ['period' => '2025-06-22', 'translations' => 2, 'score' => 72.0],
-                ['period' => '2025-06-23', 'translations' => 6, 'score' => 85.3],
-                ['period' => '2025-06-24', 'translations' => 8, 'score' => 88.2],
-                ['period' => '2025-06-25', 'translations' => 9, 'score' => 90.0],
-            ],
-            'month' => [
-                ['period' => '2025-06-01', 'translations' => 8, 'score' => 85.2],
-                ['period' => '2025-06-08', 'translations' => 5, 'score' => 78.6],
-                ['period' => '2025-06-15', 'translations' => 10, 'score' => 91.3],
-                ['period' => '2025-06-22', 'translations' => 7, 'score' => 82.4],
-            ],
-            'year' => [
-                ['period' => '2024-07', 'translations' => 20, 'score' => 80.0],
-                ['period' => '2024-08', 'translations' => 23, 'score' => 84.2],
-                ['period' => '2024-09', 'translations' => 19, 'score' => 79.5],
-                ['period' => '2024-10', 'translations' => 26, 'score' => 87.1],
-                ['period' => '2024-11', 'translations' => 15, 'score' => 75.0],
-                ['period' => '2024-12', 'translations' => 30, 'score' => 89.3],
-                ['period' => '2025-01', 'translations' => 22, 'score' => 83.8],
-                ['period' => '2025-02', 'translations' => 17, 'score' => 77.0],
-                ['period' => '2025-03', 'translations' => 28, 'score' => 90.5],
-                ['period' => '2025-04', 'translations' => 24, 'score' => 85.7],
-                ['period' => '2025-05', 'translations' => 19, 'score' => 79.1],
-                ['period' => '2025-06', 'translations' => 25, 'score' => 88.0],
-            ],
+        // 日付フォーマット
+        $format = match ($timeframe) {
+            'week' => null,
+            'month' => '%Y-%m',
+            'year' => '%Y',
         };
 
+        $query = DB::table('translations')
+            ->where('user_id', $user->id)
+            ->whereNotNull('score');
+
+        if ($timeframe === 'week') {
+            $query->selectRaw("
+                DATE_FORMAT(DATE_SUB(created_at, INTERVAL (WEEKDAY(created_at)) DAY), '%Y-%m-%d') as period,
+                COUNT(*) as translations,
+                ROUND(AVG(score), 2) as score
+            ")
+                ->groupBy('period')
+                ->orderByDesc('period');
+        } else {
+            $query->selectRaw("
+                DATE_FORMAT(created_at, '{$format}') as period,
+                COUNT(*) as translations,
+                ROUND(AVG(score), 2) as score
+            ")
+                ->groupBy('period')
+                ->orderByDesc('period');
+        }
+
+        // 30件制限
+        $translations = $query
+            ->limit(30)
+            ->get()
+            ->sortBy('period')
+            ->values();
+
         return response()->json([
-            'data' => $data,
+            'data' => $translations,
             'timeframe' => $timeframe,
         ]);
+
     }
 
     public function scoreDistribution()
     {
         $user = Auth::user();
 
-        // ダミー
+        // スコア範囲ごとにカウント
+        $distribution = DB::table('translations')
+            ->selectRaw("
+        CASE
+            WHEN score BETWEEN 90 AND 100 THEN '90-100'
+            WHEN score BETWEEN 80 AND 89 THEN '80-89'
+            WHEN score BETWEEN 70 AND 79 THEN '70-79'
+            WHEN score BETWEEN 60 AND 69 THEN '60-69'
+            ELSE '0-59'
+        END AS `range`,
+        COUNT(*) AS `count`
+    ")
+            ->where('user_id', $user->id)
+            ->whereNotNull('score')
+            ->groupBy('range')
+            ->orderByRaw("FIELD(`range`, '90-100', '80-89', '70-79', '60-69', '0-59')")
+            ->get()
+            ->map(function ($item) {
+                $labels = [
+                    '90-100' => '優秀',
+                    '80-89' => '良い',
+                    '70-79' => '普通',
+                    '60-69' => '注意',
+                    '0-59' => '要改善',
+                ];
+                return [
+                    'range' => $item->range,
+                    'label' => $labels[$item->range] ?? $item->range,
+                    'count' => $item->count,
+                ];
+            });
+
         return response()->json([
-            'distribution' => [
-                ['range' => '90-100', 'label' => '優秀', 'count' => 20],
-                ['range' => '80-89', 'label' => '良い', 'count' => 35],
-                ['range' => '70-79', 'label' => '普通', 'count' => 15],
-                ['range' => '60-69', 'label' => '注意', 'count' => 8],
-                ['range' => '0-59', 'label' => '要改善', 'count' => 5],
-            ]
+            'distribution' => $distribution,
         ]);
     }
 
     public function languages()
     {
+        $user = Auth::user();
+
+        // user_idでprogressのbook_idを取得し、本の言語ごとに集計
+        $languages = DB::table('progress')
+            ->join('books', 'progress.book_id', '=', 'books.id')
+            ->select('books.lang as language', DB::raw('COUNT(DISTINCT books.id) as bookCount'))
+            ->where('progress.user_id', $user->id)
+            ->groupBy('books.lang')
+            ->get();
+
         return response()->json([
-            'languages' => [
-                ['language' => 'English', 'bookCount' => 45],
-                ['language' => 'French', 'bookCount' => 20],
-                ['language' => 'Spanish', 'bookCount' => 15],
-            ],
+            'languages' => $languages,
             'message' => '取得に成功しました'
         ]);
     }
 
     public function recentActivity(Request $request)
     {
+        $user = Auth::user();
         $limit = (int) $request->query('limit', 10);
 
-        // ダミーデータ（必要に応じてもっと追加可）
-        $allActivities = [
-            [
-                'date' => '2025-06-25',
-                'bookTitle' => 'Frankenstein',
-                'paragraphsTranslated' => 2,
-                'score' => 90,
-                'bookId' => 'book_001',
-            ],
-            [
-                'date' => '2025-06-24',
-                'bookTitle' => 'Les Misérables',
-                'paragraphsTranslated' => 3,
-                'score' => 85,
-                'bookId' => 'book_002',
-            ],
-            [
-                'date' => '2025-06-23',
-                'bookTitle' => 'Don Quixote',
-                'paragraphsTranslated' => 4,
-                'score' => 82,
-                'bookId' => 'book_003',
-            ],
-            [
-                'date' => '2025-06-22',
-                'bookTitle' => 'Pride and Prejudice',
-                'paragraphsTranslated' => 3,
-                'score' => 87,
-                'bookId' => 'book_123',
-            ],
-            [
-                'date' => '2025-06-21',
-                'bookTitle' => 'The Divine Comedy',
-                'paragraphsTranslated' => 1,
-                'score' => 95,
-                'bookId' => 'book_004',
-            ],
-            // さらに追加可
-        ];
-
-        $activities = array_slice($allActivities, 0, $limit);
+        $activities = \DB::table('translations as t')
+            ->join('pages as p', 't.page_id', '=', 'p.id')
+            ->join('books as b', 'p.book_id', '=', 'b.id')
+            ->select([
+                \DB::raw('DATE(t.created_at) as date'),
+                'b.title as bookTitle',
+                \DB::raw('MAX(p.page_number) as paragraphsTranslated'),
+                \DB::raw('ROUND(AVG(t.score), 2) as score'),
+            ])
+            ->where('t.user_id', $user->id)
+            ->groupBy('date', 'b.id', 'b.title')
+            ->orderByDesc('date')
+            ->limit($limit)
+            ->get();
 
         return response()->json([
             'activities' => $activities,
-            'message' => '取得に成功しました'
         ]);
     }
 }
