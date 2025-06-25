@@ -241,7 +241,14 @@ export default function BookTranslationPreview() {
     };
 
     if (loading || !initialDataLoaded) {
-        return <div className="p-8 text-gray-600 text-center">読み込み中...</div>;
+        return (
+            <div className="pl-16 lg:pl-16 min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">ページデータを読み込み中...</p>
+                </div>
+            </div>
+        );
     }
 
     if (pages.length === 0) {

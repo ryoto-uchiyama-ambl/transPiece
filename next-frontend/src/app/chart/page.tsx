@@ -6,8 +6,6 @@ import api from '../../../lib/api';
 import {
     LineChart,
     Line,
-    BarChart,
-    Bar,
     PieChart,
     Pie,
     Cell,
@@ -18,7 +16,6 @@ import {
     Legend,
     ResponsiveContainer
 } from 'recharts';
-import { stringify } from 'querystring';
 
 type StartCardProps = {
     title: string;
@@ -29,14 +26,6 @@ type StartCardProps = {
         positive: boolean;
     };
     color?: 'indigo' | 'green' | 'amber' | 'blue';
-};
-
-type RecentActivityItem = {
-    date: string;
-    bookTitle: string;
-    paragraphs: number;
-    score: number;
-    bookId: number;
 };
 
 type TranslationProgress = {
