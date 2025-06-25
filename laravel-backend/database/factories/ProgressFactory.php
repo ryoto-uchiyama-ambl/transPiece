@@ -21,7 +21,7 @@ class ProgressFactory extends Factory
             'book_id' => 1,
             'current_page' => fake()->numberBetween(1, 100),
             'is_favorite' => fake()->boolean(),
-            'created_at' => now(),
+            'created_at' => fake()->dateTimeBetween('-2 year', 'now'),
             'updated_at' => now(),
         ];
     }

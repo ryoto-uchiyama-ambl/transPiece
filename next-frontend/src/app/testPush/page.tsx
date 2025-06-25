@@ -21,3 +21,8 @@
 
 //     return <button onClick={setupPush}>通知を有効にする</button>;
 // }
+
+
+export default function TestPushPage() {
+  return <div>Test Push Page</div>;
+}

@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from 'react';
 import api from '../../../../lib/api';
 import { useParams } from 'next/navigation';
-import axios from 'axios';
 import BookHeader from './components/BookHeader';
 import OriginalText from './components/OriginalText';
 import UserTranslation from './components/UserTranslation';
@@ -11,7 +10,6 @@ import UserTranslation from './components/UserTranslation';
 import AIScore from './components/AIScore';
 import PaginationControls from './components/PaginationControls';
 import { createEmptyCard } from 'ts-fsrs';
-import { v4 as uuidv4 } from 'uuid';
 import { useRouter } from 'next/navigation';
 
 
@@ -88,7 +86,6 @@ export default function BookTranslationPreview() {
     const [currentPage, setCurrentPage] = useState(1);
     const [pages, setPages] = useState<PageData[]>([]);
     const [loading, setLoading] = useState(true);
-    const [translatingWord, setTranslatingWord] = useState(false);
     const [wordPopup, setWordPopup] = useState<{
         word: string;
         translation: string;
@@ -113,7 +110,6 @@ export default function BookTranslationPreview() {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                await api.get('/sanctum/csrf-cookie');
                 const response = await api.get('/api/user');
                 setUser(response.data);
             } catch (err: any) {
@@ -129,7 +125,6 @@ export default function BookTranslationPreview() {
         const fetchData = async () => {
             setLoading(true);
             try {
-                await api.get('/sanctum/csrf-cookie');
                 await api.post('/api/currentBook', { book_id });
 
                 const res = await api.get(`/api/book/${book_id}`);
@@ -165,11 +160,9 @@ export default function BookTranslationPreview() {
 
     // 単語翻訳APIを呼び出す関数
     const translateWord = async (word: string, x: number, y: number) => {
-        setTranslatingWord(true);
         setClickedWord(word);
 
         try {
-            await api.get('/sanctum/csrf-cookie'); // Laravel Sanctum CSRF
             const response = await api.post('/api/translateWord', { word });
             const translation = response.data.translations[0]?.text || '翻訳結果がありません';
 
@@ -204,7 +197,6 @@ export default function BookTranslationPreview() {
                 visible: true
             });
         } finally {
-            setTranslatingWord(false);
         }
     };
 
@@ -292,7 +284,6 @@ export default function BookTranslationPreview() {
         }
 
         try {
-            await api.get('/sanctum/csrf-cookie'); // Laravel Sanctum CSRF
             const response = await api.post('/api/gradeTranslation', {
                 book_text: bookText,
                 translated_text: translatedText,
@@ -326,8 +317,6 @@ export default function BookTranslationPreview() {
 
         } catch (err) {
             console.error('単語の翻訳に失敗しました', err);
-        } finally {
-            setTranslatingWord(false);
         }
     }
 
@@ -340,7 +329,6 @@ export default function BookTranslationPreview() {
         if (!translation) return;
 
         try {
-            await api.get('/sanctum/csrf-cookie');
             await api.post('/api/translations', {
                 book_id,
                 page_number: current.page_number,

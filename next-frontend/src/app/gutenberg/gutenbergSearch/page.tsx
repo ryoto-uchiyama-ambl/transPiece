@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function BookSearchPage() {
@@ -9,7 +9,6 @@ export default function BookSearchPage() {
     const [loading, setLoading] = useState(false);
     const [nextUrl, setNextUrl] = useState<string | null>(null);
     const [prevUrl, setPrevUrl] = useState<string | null>(null);
-    const [currentUrl, setCurrentUrl] = useState<string | null>(null);
     const router = useRouter();
 
     const fetchBooks = async (url: string) => {
@@ -20,7 +19,6 @@ export default function BookSearchPage() {
             setResults(data.results);
             setNextUrl(data.next);
             setPrevUrl(data.previous);
-            setCurrentUrl(url);
         } catch (err) {
             console.error('Fetch error:', err);
         } finally {

@@ -14,10 +14,9 @@ export default function LoginPage() {
 
     const handleLogin = async () => {
         try {
-            await api.get('/sanctum/csrf-cookie');
             await api.post('/api/login', { email, password });
             router.push('/home');
-        } catch (error: any) {
+        } catch {
             setMessage('ログイン失敗');
         }
     };

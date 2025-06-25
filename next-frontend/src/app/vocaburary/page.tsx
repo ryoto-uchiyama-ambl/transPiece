@@ -32,7 +32,6 @@ export default function VocabularyPage() {
             setLoading(true);
             setError(null);
 
-            await api.get('/sanctum/csrf-cookie');
             const response = await api.get('/api/vocabulary');
 
             const vocabularyData: VocabularyItem[] = response.data.map((item: any) => ({
@@ -91,6 +90,32 @@ export default function VocabularyPage() {
     //         console.error('理解状態の更新に失敗しました:', err);
     //     }
     // };
+    const getPageNumbers = () => {
+        const maxVisiblePages = 5;
+        const pages = [];
+
+        if (totalPages <= maxVisiblePages) {
+            // 総ページ数が最大表示数以下の場合、すべてのページを表示
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
+        } else {
+            // 総ページ数が最大表示数を超える場合
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+            // 最初のページから始まる場合の調整
+            if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                pages.push(i);
+            }
+        }
+
+        return pages;
+    };
 
     const getStateLabel = (state: number) => {
         switch (state) {
@@ -250,7 +275,24 @@ export default function VocabularyPage() {
                         >
                             前へ
                         </button>
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+
+                        {/* 最初のページが表示されていない場合、最初のページと省略記号を表示 */}
+                        {getPageNumbers()[0] > 1 && (
+                            <>
+                                <button
+                                    onClick={() => setCurrentPage(1)}
+                                    className="px-3 py-1 bg-gray-200 text-gray-700 rounded"
+                                >
+                                    1
+                                </button>
+                                {getPageNumbers()[0] > 2 && (
+                                    <span className="px-3 py-1 text-gray-500">...</span>
+                                )}
+                            </>
+                        )}
+
+                        {/* メインのページ番号 */}
+                        {getPageNumbers().map(page => (
                             <button
                                 key={page}
                                 onClick={() => setCurrentPage(page)}
@@ -262,6 +304,22 @@ export default function VocabularyPage() {
                                 {page}
                             </button>
                         ))}
+
+                        {/* 最後のページが表示されていない場合、省略記号と最後のページを表示 */}
+                        {getPageNumbers()[getPageNumbers().length - 1] < totalPages && (
+                            <>
+                                {getPageNumbers()[getPageNumbers().length - 1] < totalPages - 1 && (
+                                    <span className="px-3 py-1 text-gray-500">...</span>
+                                )}
+                                <button
+                                    onClick={() => setCurrentPage(totalPages)}
+                                    className="px-3 py-1 bg-gray-200 text-gray-700 rounded"
+                                >
+                                    {totalPages}
+                                </button>
+                            </>
+                        )}
+
                         <button
                             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                             disabled={currentPage === totalPages}

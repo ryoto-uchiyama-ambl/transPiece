@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             PagesTableSeeder::class,
             ProgressTableSeeder::class,
             SampleSeeder::class,
+            DummySeeder::class,
         ]);
     }
 }

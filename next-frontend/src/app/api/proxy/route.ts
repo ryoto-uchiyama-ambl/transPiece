@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
                 'Cache-Control': 'public, max-age=3600',
             },
         });
-    } catch (err) {
+    } catch {
         return new NextResponse('Failed to fetch content', { status: 500 });
     }
 }

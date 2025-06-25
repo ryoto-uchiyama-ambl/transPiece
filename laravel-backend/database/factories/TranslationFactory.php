@@ -22,7 +22,7 @@ class TranslationFactory extends Factory
             'translated_text' => fake()->text(100),
             'score' => fake()->randomFloat(0, 0, 100),
             'AI_feedback' => fake()->sentence(3),
-            'created_at' => now(),
+            'created_at' => fake()->dateTimeBetween('-2 year', 'now'),
             'updated_at' => now(),
         ];
     }
