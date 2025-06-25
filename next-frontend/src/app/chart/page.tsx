@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import "remixicon/fonts/remixicon.css";
+import api from '../../../lib/api';
 import {
     LineChart,
     Line,
@@ -64,11 +65,10 @@ type RecentActivity = {
 
 export default function ChartPage() {
     // State for different chart data
-<<<<<<< HEAD:next-frontend/src/app/chart/page.tsx
-    const [translationProgress, setTranslationProgress] = useState([]);
-    const [scoreDistribution, setScoreDistribution] = useState<Array<{ name: string; value: number; color: string }>>([]);
-    const [languageBreakdown, setLanguageBreakdown] = useState([]);
-    const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([]);
+    const [translationProgress, setTranslationProgress] = useState<TranslationProgress[]>([]);
+    const [scoreDistribution, setScoreDistribution] = useState<ScoreDistribution[]>([]);
+    const [languageBreakdown, setLanguageBreakdown] = useState<LanguageBreakdown[]>([]);
+    const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
     const [summaryStats, setSummaryStats] = useState({
         totalTranslations: 0,
         averageScore: 0,
@@ -80,12 +80,6 @@ export default function ChartPage() {
             books: { value: 0, positive: true },
         }
     });
-=======
-    const [translationProgress, setTranslationProgress] = useState<TranslationProgress[]>([]);
-    const [scoreDistribution, setScoreDistribution] = useState<ScoreDistribution[]>([]);
-    const [languageBreakdown, setLanguageBreakdown] = useState<LanguageBreakdown[]>([]);
-    const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
->>>>>>> feature/loadTest:next-frontend/src/app/chart/page.test.tsx
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<String | null>(null);
     const [selectedTimeFrame, setSelectedTimeFrame] = useState<'week' | 'month' | 'year'>('month');

@@ -86,6 +86,7 @@ export default function BookTranslationPreview() {
     const [currentPage, setCurrentPage] = useState(1);
     const [pages, setPages] = useState<PageData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [initialDataLoaded, setInitialDataLoaded] = useState(false);
     const [wordPopup, setWordPopup] = useState<{
         word: string;
         translation: string;
@@ -123,39 +124,32 @@ export default function BookTranslationPreview() {
 
     useEffect(() => {
         const fetchData = async () => {
+            if (!book_id) return;
+            
             setLoading(true);
             try {
-                await api.post('/api/currentBook', { book_id });
+                // すべての非同期処理を並行実行
+                const [currentBookResponse, bookResponse, currentPageResponse] = await Promise.all([
+                    api.post('/api/currentBook', { book_id }),
+                    api.get(`/api/book/${book_id}`),
+                    api.get(`/api/getCurrentPage?book_id=${book_id}`)
+                ]);
 
-                const res = await api.get(`/api/book/${book_id}`);
-                setPages(res.data.pages); // Laravel 側から受け取る形式に対応
+                setPages(bookResponse.data.pages);
+                
+                if (currentPageResponse.data.current_page) {
+                    setCurrentPage(currentPageResponse.data.current_page);
+                }
+                
+                setInitialDataLoaded(true);
             } catch (err) {
                 console.error('データの取得に失敗しました', err);
-            }
-        };
-
-        if (book_id) {
-            fetchData();
-        }
-    }, [book_id]);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const res = await api.get(`/api/getCurrentPage?book_id=${book_id}`);
-                if (res.data.current_page) {
-                    setCurrentPage(res.data.current_page); // ← ここでページ番号をセット
-                }
-            } catch (err) {
-                console.error('現在のページ取得に失敗しました', err);
             } finally {
                 setLoading(false);
             }
-        }
+        };
 
-        if (book_id) {
-            fetchData();
-        }
+        fetchData();
     }, [book_id]);
 
     // 単語翻訳APIを呼び出す関数
@@ -246,7 +240,7 @@ export default function BookTranslationPreview() {
         setClickedWord(null);
     };
 
-    if (loading) {
+    if (loading || !initialDataLoaded) {
         return <div className="p-8 text-gray-600 text-center">読み込み中...</div>;
     }
 

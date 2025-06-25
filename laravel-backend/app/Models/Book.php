@@ -74,7 +74,7 @@ class Book extends Model
         return $book;
     }
 
-    public function userHasAccess($userId, $bookId):bool
+    public static function userHasAccess($userId, $bookId):bool
     {
         // ユーザーがこの本にアクセスできるか確認
         return Progress::where('user_id', $userId)
