@@ -26,7 +26,7 @@ class BookFactory extends Factory
             'downloads' => fake()->numberBetween(0, 100000),
             'lang' => fake()->randomElement(['en', 'ja', 'fr', 'de', 'es']),
             'page_count' => fake()->numberBetween(10, 100),
-            'created_at' => now(),
+            'created_at' => fake()->dateTimeBetween('-2 year', 'now'),
             'updated_at' => now(),
         ];
     }
