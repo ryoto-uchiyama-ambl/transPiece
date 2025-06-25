@@ -18,15 +18,48 @@ import {
     Legend,
     ResponsiveContainer
 } from 'recharts';
+import { stringify } from 'querystring';
+
+type StartCardProps = {
+    title: string;
+    value: number | string;
+    icon: string;
+    trend?: {
+        value: number;
+        positive: boolean;
+    };
+    color?: 'indigo' | 'green' | 'amber' | 'blue';
+};
+
+type RecentActivityItem = {
+    date: string;
+    bookTitle: string;
+    paragraphs: number;
+    score: number;
+    bookId: number;
+};
 
 export default function ChartPage() {
     // State for different chart data
     const [translationProgress, setTranslationProgress] = useState([]);
-    const [scoreDistribution, setScoreDistribution] = useState([]);
+    const [scoreDistribution, setScoreDistribution] = useState<Array<{ name: string; value: number; color: string }>>([]);
     const [languageBreakdown, setLanguageBreakdown] = useState([]);
-    const [recentActivity, setRecentActivity] = useState([]);
+    const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([]);
+    const [summaryStats, setSummaryStats] = useState({
+        totalTranslations: 0,
+        averageScore: 0,
+        completedBooks: 0,
+        streakDays: 0,
+        trends: {
+            translations: { value: 0, positive: true },
+            score: { value: 0, positive: true },
+            books: { value: 0, positive: true },
+            streak: { value: 0, positive: true }
+        }
+    });
     const [isLoading, setIsLoading] = useState(true);
-    const [selectedTimeFrame, setSelectedTimeFrame] = useState('month');
+    const [error, setError] = useState<String | null>(null);
+    const [selectedTimeFrame, setSelectedTimeFrame] = useState<'week' | 'month' | 'year'>('month');
     const [selectedChart, setSelectedChart] = useState('progress');
 
     // Colors for charts
@@ -39,96 +72,147 @@ export default function ChartPage() {
         poor: '#f87171'
     };
 
-    // Fetch data from API
+    // Fetch summary stats
+    const fetchSummaryStats = async () => {
+        try {
+            const response = await api.get('api/stats/summary');
+            setSummaryStats(response.data);
+        } catch (error) {
+            console.error("Error fetching summary stats:", error);
+            setError("統計サマリーの取得に失敗しました");
+        }
+    };
+
+    // Fetch translation progress
+    const fetchTranslationProgress = async (timeframe: 'week' | 'month' | 'year') => {
+        try {
+            const response = await api.get(`api/stats/progress?timeframe=${timeframe}`);
+            // API response format: { data: [{ period, translations, score }], timeframe }
+            const formattedData = response.data.data.map((item: { period: string; translations: number; score: number }) => ({
+                name: formatPeriodLabel(item.period, timeframe),
+                translations: item.translations,
+                score: item.score
+            }));
+            setTranslationProgress(formattedData);
+        } catch (error) {
+            console.error("Error fetching translation progress:", error);
+            setError("翻訳進捗の取得に失敗しました");
+        }
+    };
+
+    // Fetch score distribution
+    const fetchScoreDistribution = async () => {
+        try {
+            const response = await api.get('api/stats/scoreDistribution');
+            // API response format: { distribution: [{ range, label, count }] }
+            const formattedData = response.data.distribution.map((item: { label: string; range: string; count: number; }) => ({
+                name: `${item.label} (${item.range})`,
+                value: item.count,
+                color: getScoreColor(item.range)
+            }));
+            setScoreDistribution(formattedData);
+        } catch (error) {
+            console.error("Error fetching score distribution:", error);
+            setError("スコア分布の取得に失敗しました");
+        }
+    };
+
+    // Fetch language breakdown
+    const fetchLanguageBreakdown = async () => {
+        try {
+            const response = await api.get('api/stats/languages');
+            // API response format: { languages: [{ language, bookCount }] }
+            const formattedData = response.data.languages.map((item: { language: string; bookCount: number }) => ({
+                name: item.language,
+                value: item.bookCount
+            }));
+            setLanguageBreakdown(formattedData);
+        } catch (error) {
+            console.error("Error fetching language breakdown:", error);
+            setError("言語別統計の取得に失敗しました");
+        }
+    };
+
+    // Fetch recent activity
+    const fetchRecentActivity = async () => {
+        try {
+            const response = await api.get('api/stats/recentActivity?limit=10');
+            // API response format: { activities: [{ date, bookTitle, paragraphsTranslated, score, bookId }] }
+            const formattedData = response.data.activities.map((item: { date: string; bookTitle: string; paragraphsTranslated: number; score: number; bookId: number; }) => ({
+                date: formatDate(item.date),
+                bookTitle: item.bookTitle,
+                paragraphs: item.paragraphsTranslated,
+                score: item.score,
+                bookId: item.bookId
+            }));
+            setRecentActivity(formattedData);
+        } catch (error) {
+            console.error("Error fetching recent activity:", error);
+            setError("最近の活動の取得に失敗しました");
+        }
+    };
+
+    // Helper function to format period labels
+    const formatPeriodLabel = (period: string, timeframe: string) => {
+        const date = new Date(period);
+        switch (timeframe) {
+            case 'week':
+                return `${date.getMonth() + 1}/${date.getDate()}`;
+            case 'month':
+                return `${date.getMonth() + 1}/${date.getDate()}`;
+            case 'year':
+                const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+                return monthNames[date.getMonth()];
+            default:
+                return period;
+        }
+    };
+
+    // Helper function to format date
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+    };
+
+    // Helper function to get color based on score range
+    const getScoreColor = (range: string) => {
+        if (range.startsWith('90')) return SCORE_COLORS.excellent;
+        if (range.startsWith('80')) return SCORE_COLORS.good;
+        if (range.startsWith('70')) return SCORE_COLORS.average;
+        if (range.startsWith('60')) return SCORE_COLORS.fair;
+        return SCORE_COLORS.poor;
+    };
+
+    // Fetch all data
     useEffect(() => {
-        const fetchChartData = async () => {
+        const fetchInitialData = async () => {
             setIsLoading(true);
+            setError(null);
             try {
-                // In a real application, these would be separate API calls
-                // const progressData = await api.get('/api/stats/progress');
-                // const scoresData = await api.get('/api/stats/scores');
-                // etc...
-
-                // For demonstration, using mock data
-                const mockProgressData = generateMockProgressData(selectedTimeFrame);
-                const mockScoreData = generateMockScoreData();
-                const mockLanguageData = generateMockLanguageData();
-                const mockActivityData = generateMockActivityData();
-
-                setTranslationProgress(mockProgressData);
-                setScoreDistribution(mockScoreData);
-                setLanguageBreakdown(mockLanguageData);
-                setRecentActivity(mockActivityData);
-
+                await Promise.all([
+                    fetchSummaryStats(),
+                    fetchTranslationProgress(selectedTimeFrame),
+                    fetchScoreDistribution(),
+                    fetchLanguageBreakdown(),
+                    fetchRecentActivity()
+                ]);
             } catch (error) {
-                console.error("Error fetching chart data:", error);
+                console.error("Error fetching data:", error);
+                setError("データの取得に失敗しました");
             } finally {
                 setIsLoading(false);
             }
         };
 
-        fetchChartData();
+        fetchInitialData();
+    }, []);
+
+    // Refetch progress data when timeframe changes
+    useEffect(() => {
+        if (!isLoading) {
+            fetchTranslationProgress(selectedTimeFrame);
+        }
     }, [selectedTimeFrame]);
-
-    // Helper functions to generate mock data
-    function generateMockProgressData(timeframe) {
-        const data = [];
-        let days = 30;
-
-        if (timeframe === 'week') days = 7;
-        if (timeframe === 'month') days = 30;
-        if (timeframe === 'year') days = 12; // For year, each point is a month
-
-        for (let i = 0; i < days; i++) {
-            let label = i.toString();
-            if (timeframe === 'year') {
-                // Month names for year view
-                const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-                label = monthNames[i];
-            }
-
-            data.push({
-                name: label,
-                translations: Math.floor(Math.random() * 12) + 1,
-                score: Math.floor(Math.random() * 30) + 70 // Score between 70-100
-            });
-        }
-        return data;
-    }
-
-    function generateMockScoreData() {
-        return [
-            { name: '優秀 (90-100)', value: 20, color: SCORE_COLORS.excellent },
-            { name: '良い (80-89)', value: 35, color: SCORE_COLORS.good },
-            { name: '平均 (70-79)', value: 25, color: SCORE_COLORS.average },
-            { name: '普通 (60-69)', value: 15, color: SCORE_COLORS.fair },
-            { name: '要改善 (0-59)', value: 5, color: SCORE_COLORS.poor }
-        ];
-    }
-
-    function generateMockLanguageData() {
-        return [
-            { name: 'English', value: 45 },
-            { name: 'French', value: 20 },
-            { name: 'Spanish', value: 15 },
-            { name: 'German', value: 12 },
-            { name: 'Italian', value: 8 }
-        ];
-    }
-
-    function generateMockActivityData() {
-        const data = [];
-        for (let i = 0; i < 10; i++) {
-            const bookTitles = ['Pride and Prejudice', 'Adventures of Huckleberry Finn', 'Alice in Wonderland', 'The Great Gatsby', 'Moby Dick'];
-            data.push({
-                date: `${5 - Math.floor(i / 2)}/${i % 2 === 0 ? '15' : '30'}/2025`,
-                bookTitle: bookTitles[Math.floor(Math.random() * bookTitles.length)],
-                paragraphs: Math.floor(Math.random() * 5) + 1,
-                score: Math.floor(Math.random() * 30) + 70
-            });
-        }
-        return data;
-    }
 
     // Time frame selector
     const TimeFrameSelector = () => (
@@ -136,8 +220,8 @@ export default function ChartPage() {
             <button
                 onClick={() => setSelectedTimeFrame('week')}
                 className={`px-4 py-2 rounded-md transition-all ${selectedTimeFrame === 'week'
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-indigo-100'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-indigo-100'
                     }`}
             >
                 週間
@@ -145,8 +229,8 @@ export default function ChartPage() {
             <button
                 onClick={() => setSelectedTimeFrame('month')}
                 className={`px-4 py-2 rounded-md transition-all ${selectedTimeFrame === 'month'
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-indigo-100'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-indigo-100'
                     }`}
             >
                 月間
@@ -154,8 +238,8 @@ export default function ChartPage() {
             <button
                 onClick={() => setSelectedTimeFrame('year')}
                 className={`px-4 py-2 rounded-md transition-all ${selectedTimeFrame === 'year'
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-indigo-100'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-indigo-100'
                     }`}
             >
                 年間
@@ -176,8 +260,8 @@ export default function ChartPage() {
                     key={chart.id}
                     onClick={() => setSelectedChart(chart.id)}
                     className={`flex flex-col items-center justify-center p-4 rounded-lg border transition-all ${selectedChart === chart.id
-                            ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                            : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                        ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                        : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
                         }`}
                 >
                     <span className={`${chart.icon} text-2xl mb-2`}></span>
@@ -199,8 +283,28 @@ export default function ChartPage() {
         );
     }
 
+    // Render error state
+    if (error) {
+        return (
+            <div className="pl-16 lg:pl-64 min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="text-red-500 text-6xl mb-4">
+                        <span className="ri-error-warning-line"></span>
+                    </div>
+                    <p className="text-gray-800 text-lg mb-4">{error}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors"
+                    >
+                        再読み込み
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     // Helper component for stat cards
-    const StatCard = ({ title, value, icon, trend, color = 'indigo' }) => {
+    const StatCard = ({ title, value, icon, trend, color = 'indigo' }: StartCardProps) => {
         const colorClasses = {
             indigo: 'bg-indigo-50 text-indigo-700',
             green: 'bg-green-50 text-green-700',
@@ -223,7 +327,7 @@ export default function ChartPage() {
                         <span className={trend.positive ? 'text-green-600 ml-1' : 'text-red-600 ml-1'}>
                             {trend.value}% {trend.positive ? '上昇' : '下降'}
                         </span>
-                        <span className="text-gray-400 ml-1">（先週比）</span>
+                        <span className="text-gray-400 ml-1">（前期比）</span>
                     </div>
                 )}
             </div>
@@ -344,10 +448,10 @@ export default function ChartPage() {
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{item.paragraphs}</td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${item.score >= 90 ? 'bg-green-100 text-green-800' :
-                                                        item.score >= 80 ? 'bg-lime-100 text-lime-800' :
-                                                            item.score >= 70 ? 'bg-amber-100 text-amber-800' :
-                                                                item.score >= 60 ? 'bg-orange-100 text-orange-800' :
-                                                                    'bg-red-100 text-red-800'
+                                                    item.score >= 80 ? 'bg-lime-100 text-lime-800' :
+                                                        item.score >= 70 ? 'bg-amber-100 text-amber-800' :
+                                                            item.score >= 60 ? 'bg-orange-100 text-orange-800' :
+                                                                'bg-red-100 text-red-800'
                                                     }`}>
                                                     {item.score}
                                                 </span>
@@ -389,30 +493,30 @@ export default function ChartPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                     <StatCard
                         title="総翻訳数"
-                        value="142"
+                        value={summaryStats.totalTranslations}
                         icon="ri-translate-ai-2"
-                        trend={{ positive: true, value: "12" }}
+                        trend={summaryStats.trends.translations}
                         color="indigo"
                     />
                     <StatCard
                         title="平均スコア"
-                        value="82.3"
+                        value={summaryStats.averageScore}
                         icon="ri-medal-line"
-                        trend={{ positive: true, value: "3.5" }}
+                        trend={summaryStats.trends.score}
                         color="green"
                     />
                     <StatCard
                         title="読了書籍"
-                        value="16"
+                        value={summaryStats.completedBooks}
                         icon="ri-book-read-line"
-                        trend={{ positive: false, value: "4" }}
+                        trend={summaryStats.trends.books}
                         color="amber"
                     />
                     <StatCard
                         title="連続日数"
-                        value="7"
+                        value={summaryStats.streakDays}
                         icon="ri-calendar-check-line"
-                        trend={{ positive: true, value: "40" }}
+                        trend={summaryStats.trends.streak}
                         color="blue"
                     />
                 </div>

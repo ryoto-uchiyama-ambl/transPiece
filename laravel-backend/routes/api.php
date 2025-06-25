@@ -7,8 +7,7 @@ use App\Http\Controllers\Api\BookController;
 use App\Http\Controllers\Api\PageController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\VocabularyController;
-use SpomkyLabs\Pki\X509\Certificate\Extension\AccessDescription\AuthorityAccessDescription;
-
+use App\Http\Controllers\Api\StatsController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -89,3 +88,14 @@ Route::middleware('auth:sanctum')->post('/pushSubscribe', function (Request $req
 
     return response()->json(['message' => 'Subscribed']);
 });
+
+// 統計サマリ取得
+Route::middleware('auth:sanctum')->get('/stats/summary', [StatsController::class, 'summary']);
+// 翻訳進捗取得
+Route::middleware('auth:sanctum')->get('/stats/progress', [StatsController::class, 'progress']);
+// スコア分布取得
+Route::middleware('auth:sanctum')->get('/stats/scoreDistribution', [StatsController::class, 'scoreDistribution']);
+// 言語別統計取得
+Route::middleware('auth:sanctum')->get('/stats/languages', [StatsController::class, 'languages']);
+// 最近の翻訳取得
+Route::middleware('auth:sanctum')->get('/stats/recentActivity', [StatsController::class, 'recentActivity']);
