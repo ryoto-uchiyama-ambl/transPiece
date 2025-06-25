@@ -55,7 +55,7 @@ export default function BookDetailPage() {
         try {
             setIsSubmitting(true);
             await api.get('/sanctum/csrf-cookie');
-            const response = await api.post('/api/addBook', {
+            const response = await api.post('/api/books', {
                 title,
                 gutenberg_url: url,
                 authors,
