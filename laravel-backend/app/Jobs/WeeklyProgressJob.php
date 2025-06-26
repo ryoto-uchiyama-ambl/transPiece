@@ -1,20 +1,24 @@
 <?php
+
 namespace App\Jobs;
 
 use App\Models\User;
-use Minishlink\WebPush\WebPush;
-use Minishlink\WebPush\Subscription;
+use App\Models\Translation;
+use App\Models\VocabularySchedule;
+use Illuminate\Bus\Queueable;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Bus\Queueable;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 use Illuminate\Foundation\Bus\Dispatchable;
-use App\Models\VocabularySchedule;
+use Minishlink\WebPush\WebPush;
+use Minishlink\WebPush\Subscription;
 
-class SendReviewRemindersJob implements ShouldQueue
+class WeeklyProgressJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
     public function handle()
     {
         $auth = [
@@ -26,15 +30,23 @@ class SendReviewRemindersJob implements ShouldQueue
         ];
 
         $webPush = new WebPush($auth);
+        $startOfWeek = Carbon::now()->subDays(7);
 
-        // すべての対象ユーザーに通知（復習リマインダー）
+        // 通知ONのユーザーを取得
         $users = User::with(['pushSubscriptions' => function ($query) {
-        $query->where('review_reminders', true);
-        }])->get();
+            $query->where('weekly_progress', true);
+        }])->whereHas('pushSubscriptions', function ($query) {
+            $query->where('weekly_progress', true);
+        })->get();
 
         foreach ($users as $user) {
-            // ユーザーの復習予定件数を取得
-            $dueCount = VocabularySchedule::where('user_id', $user->id)->whereDate('due', '<=', now())->count();
+            // 翻訳数（直近7日間）
+            $translationCount = Translation::where('user_id', $user->id)
+            ->where('created_at', '>=', $startOfWeek)->count();
+
+            // 単語完了数（直近7日間）
+            $reviewCount = VocabularySchedule::where('user_id', $user->id)
+            ->where('last_review', '>=', $startOfWeek)->count();
 
             foreach ($user->pushSubscriptions as $sub) {
                 $subscription = Subscription::create([
@@ -45,8 +57,9 @@ class SendReviewRemindersJob implements ShouldQueue
                 ]);
 
                 $payload = json_encode([
-                    'title' => '復習リマインダー',
-                    'body' => "本日復習予定の単語が{$dueCount}件あります。確認しましょう。",
+                    'title' => '今週の学習まとめ',
+                    'body' => "翻訳 {$translationCount} 件、復習 {$reviewCount} 単語を達成しました！素晴らしい進捗です✨",
+                    'type' => 'weekly_progress',
                 ]);
 
                 $webPush->queueNotification($subscription, $payload);

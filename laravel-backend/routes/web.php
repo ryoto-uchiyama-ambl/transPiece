@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
-
+use App\Http\Controllers\Api\SubscriptionController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -22,3 +22,5 @@ Route::get('/api/email/verify/{id}/{hash}', function (EmailVerificationRequest $
     $request->fulfill();
     return redirect('http://localhost:3000/setting/success');
 })->middleware(['auth', 'signed'])->name('verification.verify');
+
+Route::get('/test', [SubscriptionController::class, 'test']);

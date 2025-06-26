@@ -23,11 +23,12 @@ export default function SettingsPage() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('profile');
     const [profile, setProfile] = useState<UserProfile | null>(null);
+    // 初期値を明示的にbooleanで設定
     const [notifications, setNotifications] = useState<NotificationSettings>({
-        review_reminders: true,
-        translation_feedback: true,
+        review_reminders: false,
+        translation_feedback: false,
         weekly_progress: false,
-        system_updates: true
+        system_updates: false
     });
 
     // プロファイル編集用の状態
@@ -43,6 +44,7 @@ export default function SettingsPage() {
 
     const [messages, setMessages] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const router = useRouter();
+    const [isPushEnabled, setIsPushEnabled] = useState(false);
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -66,7 +68,16 @@ export default function SettingsPage() {
 
                 // 通知設定取得 (fun-018)
                 const notificationRes = await api.get('/api/user/notificationSettings');
-                setNotifications(notificationRes.data);
+                
+                // APIレスポンスを正規化してbooleanに変換
+                const normalizedNotifications: NotificationSettings = {
+                    review_reminders: Boolean(notificationRes.data?.review_reminders),
+                    translation_feedback: Boolean(notificationRes.data?.translation_feedback),
+                    weekly_progress: Boolean(notificationRes.data?.weekly_progress),
+                    system_updates: Boolean(notificationRes.data?.system_updates),
+                };
+                
+                setNotifications(normalizedNotifications);
             } catch (err: any) {
                 if (err.response && err.response.status === 401) return;
                 console.error('データ取得失敗:', err);
@@ -124,19 +135,32 @@ export default function SettingsPage() {
         }
     };
 
-    // 通知設定更新 (fun-019)
+    // 通知設定更新 (fun-019) - 改善版
     const handleNotificationUpdate = async (key: keyof NotificationSettings, value: boolean) => {
         try {
+            // まず楽観的更新でUIを即座に反映
+            setNotifications(prev => ({ ...prev, [key]: value }));
+
             const updatedSettings = { ...notifications, [key]: value };
 
             await api.get('/sanctum/csrf-cookie');
-            await api.put('/api/user/notification-settings', updatedSettings);
+            const res = await api.put('/api/user/notificationSettings', updatedSettings);
 
-            setNotifications(updatedSettings);
+            // APIレスポンスで再度正規化
+            const normalized: NotificationSettings = {
+                review_reminders: Boolean(res.data?.review_reminders),
+                translation_feedback: Boolean(res.data?.translation_feedback),
+                weekly_progress: Boolean(res.data?.weekly_progress),
+                system_updates: Boolean(res.data?.system_updates),
+            };
+            
+            setNotifications(normalized);
             setMessages({ type: 'success', text: '通知設定が更新されました。' });
 
             setTimeout(() => setMessages(null), 3000);
         } catch (error: any) {
+            // エラー時は元の状態に戻す
+            setNotifications(prev => ({ ...prev, [key]: !value }));
             setMessages({ type: 'error', text: '通知設定の更新に失敗しました。' });
             setTimeout(() => setMessages(null), 3000);
         }
@@ -149,6 +173,31 @@ export default function SettingsPage() {
             router.push('/login');
         } catch (error) {
             console.error('ログアウト失敗:', error);
+        }
+    };
+
+    // Push通知の有効化 (fun-020)
+    const handlePushEnable = async () => {
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                alert('通知が拒否されました');
+                return;
+            }
+
+            const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+            const reg = await navigator.serviceWorker.register('/sw.js');
+            const subscription = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: vapidPublicKey,
+            });
+            console.log(subscription.toJSON());
+            await api.post('/api/user/pushSubscription', subscription.toJSON());
+
+            setIsPushEnabled(true);
+        } catch (e) {
+            console.error('Push登録エラー:', e);
+            alert('Push通知の登録に失敗しました');
         }
     };
 
@@ -375,6 +424,22 @@ export default function SettingsPage() {
                                     通知設定
                                 </h3>
 
+                                <div className="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-800/50 rounded-lg">
+                                    <div>
+                                        <p className="font-medium text-yellow-800 dark:text-yellow-200">ブラウザ通知を許可</p>
+                                        <p className="text-sm text-yellow-700 dark:text-yellow-300">通知を受け取るには、まずブラウザ通知を有効にする必要があります</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={isPushEnabled}
+                                            onChange={handlePushEnable}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                                    </label>
+                                </div>
+
                                 <div className="space-y-4">
                                     {[
                                         { key: 'review_reminders', label: '復習リマインダー', description: 'FSRSアルゴリズムに基づいた復習通知を受け取る' },
@@ -390,7 +455,7 @@ export default function SettingsPage() {
                                             <label className="relative inline-flex items-center cursor-pointer">
                                                 <input
                                                     type="checkbox"
-                                                    checked={notifications[setting.key as keyof NotificationSettings]}
+                                                    checked={notifications[setting.key as keyof NotificationSettings] || false}
                                                     onChange={(e) => handleNotificationUpdate(setting.key as keyof NotificationSettings, e.target.checked)}
                                                     className="sr-only peer"
                                                 />
