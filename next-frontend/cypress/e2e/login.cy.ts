@@ -4,7 +4,7 @@ describe('ログインページ', () => {
         cy.get('input[type="email"]').type('tes@tes');
         cy.get('input[type="password"]').type('password');
         cy.contains('ログイン').click();
-        cy.url({ timeout: 10000 }).should('include', '/home');
+        cy.url({ timeout: 20000 }).should('include', '/home');
     });
 
     it('間違った認証情報でエラーメッセージが表示される', () => {

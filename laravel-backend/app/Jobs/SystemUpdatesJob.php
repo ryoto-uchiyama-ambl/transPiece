@@ -1,22 +1,24 @@
 <?php
+
 namespace App\Jobs;
 
 use App\Models\User;
-use Minishlink\WebPush\WebPush;
-use Minishlink\WebPush\Subscription;
+use Illuminate\Bus\Queueable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Bus\Queueable;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 use Illuminate\Foundation\Bus\Dispatchable;
-use App\Models\VocabularySchedule;
+use Minishlink\WebPush\WebPush;
+use Minishlink\WebPush\Subscription;
 
-class SendReviewRemindersJob implements ShouldQueue
+class SystemUpdatesJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
     public function handle()
     {
+        // VAPID 認証情報の読み込み（config/webpush.php に設定しておく）
         $auth = [
             'VAPID' => [
                 'subject' => config('webpush.vapid.subject'),
@@ -27,26 +29,23 @@ class SendReviewRemindersJob implements ShouldQueue
 
         $webPush = new WebPush($auth);
 
-        // すべての対象ユーザーに通知（復習リマインダー）
+        // system_updates を許可しているユーザーの pushSubscription を取得
         $users = User::with(['pushSubscriptions' => function ($query) {
-        $query->where('review_reminders', true);
+            $query->where('system_updates', true);
         }])->get();
 
         foreach ($users as $user) {
-            // ユーザーの復習予定件数を取得
-            $dueCount = VocabularySchedule::where('user_id', $user->id)->whereDate('due', '<=', now())->count();
-
             foreach ($user->pushSubscriptions as $sub) {
                 $subscription = Subscription::create([
                     'endpoint' => $sub->endpoint,
                     'publicKey' => $sub->public_key,
                     'authToken' => $sub->auth_token,
-                    'contentEncoding' => 'aes128gcm'
+                    'contentEncoding' => 'aes128gcm',
                 ]);
 
                 $payload = json_encode([
-                    'title' => '復習リマインダー',
-                    'body' => "本日復習予定の単語が{$dueCount}件あります。確認しましょう。",
+                    'title' => 'システム更新のお知らせ',
+                    'body'  => 'TransPieceは近日中にアップデートを実施します。',
                 ]);
 
                 $webPush->queueNotification($subscription, $payload);

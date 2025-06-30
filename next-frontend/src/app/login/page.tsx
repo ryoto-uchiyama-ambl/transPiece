@@ -69,7 +69,7 @@ export default function LoginPage() {
                             <div className="absolute inset-0 bg-gradient-to-r from-indigo-400/10 to-purple-400/10 rounded-2xl blur-2xl animate-pulse" style={{ animationDuration: '3s', animationDelay: '1s' }}></div>
                         </div>
                         <h1 className="text-3xl font-bold text-white mb-2 tracking-tight animate-pulse" style={{ animationDuration: '4s' }}>TransPiece</h1>
-                        <p className="text-gray-400 text-sm">アカウントにログインしてください</p>
+                        <p className="text-gray-400 text-sm">アカウントにログ-インしてください</p>
                     </div>
 
                     {/* Form */}
