@@ -18,8 +18,8 @@ export async function GET(req: NextRequest) {
                 'Cache-Control': 'public, max-age=3600',
             },
         });
-    } catch {
-        return new NextResponse('Failed to fetch content', { status: 500 });
+    } catch (error){
+        return new NextResponse('Failed to fetch content:', { status: 500 });
     }
 }
 
